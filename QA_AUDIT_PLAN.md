@@ -22,14 +22,14 @@ Bu sənəd saytdakı bütün dərs izahlarının, kodların və praktiki məşql
 
 ### Mərhələ 1: Ən Böyük M2 Dərsləri (Mövzu 01 - 06) — İLKİNDİR
 Ən çox qarışıq siyahıların və sıx terminlərin olduğu əsas təməl dərslər:
-- [ ] **Addım 1.1: `03-postgresql-internals.md`**
-  - Postmaster prosesi və yaddaş sahələrini (`shared_buffers`, `work_mem`, `maintenance_work_mem`) cədvəl və abzaslarla yenidən formatlamaq.
-  - MVCC, `xmin`/`xmax`, Dead Tuples, VACUUM və Autovacuum tənzimləmələrini səliqəli şəkildə strukturlaşdırmaq.
-  - B-tree, GIN, GiST, BRIN indekslərini və partisiya növlərini cədvəl halına salmaq.
-- [ ] **Addım 1.2: `05-data-modelling-warehousing.md`**
-  - Fakt və Ölçü cədvəllərinin daxili qarışıq siyahılarını ləğv edib dəqiq alt-bölmələrə və cədvəllərə ayırmaq.
-  - Transactional, Periodic Snapshot, Accumulating Snapshot fakt növlərini sığorta nümunələri ilə sadə izah etmək.
-  - SCD Type 1, 2, 3 fərqlərini və Surrogate Key zərurətini addım-addım təmizləmək.
+- [x] **Addım 1.1: `03-postgresql-internals.md` (Tamamlandı)**
+  - Postmaster prosesi və yaddaş sahələrini (`shared_buffers`, `work_mem`, `maintenance_work_mem`) cədvəl və abzaslarla yenidən formatlandı.
+  - MVCC, `xmin`/`xmax`, Dead Tuples, VACUUM və Autovacuum tənzimləmələri səliqəli şəkildə strukturlaşdırıldı.
+  - B-tree, GIN, GiST, BRIN indeksləri və partisiya növləri cədvəl halına salındı.
+- [x] **Addım 1.2: `05-data-modelling-warehousing.md` (Tamamlandı)**
+  - Fakt və Ölçü cədvəllərinin daxili qarışıq siyahıları ləğv edildi, səliqəli alt-bölmələrə və müqayisə cədvəllərinə ayrıldı.
+  - Transactional, Periodic Snapshot, Accumulating Snapshot fakt növləri sığorta nümunələri ilə sadə cədvəldə izah edildi.
+  - SCD Type 0, 1, 2, 3 fərqləri və Surrogate Key-in 3 zəruri səbəbi aydın şəkildə strukturlaşdırıldı.
 - [ ] **Addım 1.3: `01-sql-fundamentals-advanced.md`**
   - JOIN növləri, Window funksiyaları, CTE, Tranzaksiya izolyasiya səviyyələri və kilidləmə izahlarındakı `**` kirliliyini təmizləmək.
   - T-SQL və PostgreSQL dialekt tablarını yoxlamaq.

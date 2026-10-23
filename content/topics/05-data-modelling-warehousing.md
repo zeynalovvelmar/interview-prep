@@ -15,11 +15,17 @@ summary: "OLTP vs OLAP, Kimball ölçülü modelləşdirmə, Star vs Snowflake, 
 
 ## 1. Qısa izah (Sadə dildə və analogiya ilə)
 
-Data modelləşdirməni **bir supermarket şəbəkəsinin anbarı və vitrini** kimi təsəvvür edin:
-- **OLTP (Əməliyyat Kassası - 3NF)**: Hər saniyə kassada çek vuran, kartdan pul silən sistemdir. Əsas məqsədi sürətli yazma və tam bütövlükdür. Mallar kateqoriyalara görə 10 müxtəlif otaqda parçalanıb saxlanılır (Normallaşdırma).
-- **OLAP / Data Warehouse (Analitik Vitrin - Kimball Ölçülü Model)**: Mağaza rəhbərliyinin illik gəliri, ən çox satılan şokoladları və müştəri seqmentlərini analiz etdiyi masadır. Əgər rəhbər hər hesabat üçün 10 otağı gəzib məlumat yığsa (mürəkkəb 15-qatlı `JOIN`-lər), kompüter donar. Buna görə də vitrində hər şey hazır, birləşdirilmiş və rahat qruplaşdırılmış şəkildə düzülür (**Star Schema**).
-- **Faktlar (Fact - Hadisələr və Rəqəmlər)**: Kassada baş verən konkret ölçülə bilən hadisələrdir: *"Satıldı 2 ədəd, məbləğ 50 AZN"*.
-- **Ölçülər (Dimensions - Hadisənin Ətrafı)**: Hadisənin kontekstidir: *"Kim aldı? (Müştəri), Nə vaxt aldı? (Tarix), Hansı filialdan aldı? (Filial), Kim satdı? (Agent)"*.
+Data modelləşdirməni böyük bir **supermarket şəbəkəsinin əməliyyat anbarı və analitik satış vitrini** kimi təsəvvür edin:
+
+### OLTP: Əməliyyat Kassası (3NF Modeli)
+Gündəlik kassa əməliyyatları, kartdan pul silinməsi və polisin sistemdə qeydiyyatıdır. Burada əsas prioritet sürətli yazma və məlumat bütövlüyüdür. Məlumatlar təkrarçılığın qarşısını almaq üçün 10-15 müxtəlif cədvələ parçalanır (3NF Normallaşdırma).
+
+### OLAP və Data Warehouse: Analitik İdarəetmə Vitrini (Kimball Ölçülü Model)
+Rəhbərliyin illik mənfəəti, ən çox zərər gətirən sığorta növlərini və müştəri seqmentlərini analiz etdiyi mühitdir. Əgər hər analitik hesabat üçün 15 cədvəl `JOIN` edilsə, sistem iflic olar. Buna görə də vitrində hər şey əvvəlcədən birləşdirilmiş, qruplaşdırılmış və oxunması asan olan **Ulduz Sxemi (Star Schema)** formasında qurulur.
+
+### Faktlar (Facts) və Ölçülər (Dimensions)
+- **Faktlar:** Biznesdə baş verən konkret, rəqəmlə ölçülən hadisələrdir: *"Ödənilən sığorta haqqı 500 AZN, zərər məbləği 1,200 AZN"*.
+- **Ölçülər:** Həmin hadisənin ətrafındakı kontekstdir: *"Kim aldı? (Müştəri), Nə vaxt bağlandı? (Tarix), Hansı agent satdı? (Agent), Hansı məhsuldur? (KASKO/İcbari)"*.
 
 > [!TIP]
 > **Müsahibədə belə de:**
@@ -33,67 +39,75 @@ Data modelləşdirməni **bir supermarket şəbəkəsinin anbarı və vitrini** 
 
 | Xüsusiyyət | OLTP (Online Transaction Processing) | OLAP (Online Analytical Processing) |
 | :--- | :--- | :--- |
-| **Məqsəd** | Gündəlik biznes əməliyyatlarını qeyd etmək (polis yazmaq, ödəniş almaq) | Qərarların qəbulu üçün tarixi trendləri və aqreqatları təhlil etmək |
-| **Dizayn Modeli** | 3NF (Normallaşdırılmış, dublikatsız cədvəllər) | Star Schema / Snowflake (Denormallaşdırılmış, Fakt və Ölçülər) |
-| **Əsas Əməliyyat** | Çox sayda sürətli `INSERT`, `UPDATE`, `DELETE` (Row-by-Row) | Kütləvi oxuma (`SELECT`), `GROUP BY`, Window hesabatları (Batch) |
-| **Məlumat Həcmi** | Cari məlumatlar (Son 6–12 ay) | İllərlə toplanmış nəhəng tarixi məlumatlar (5–10 il) |
-| **Cavab Vaxtı** | Millisaniyələr | Saniyələr və ya dəqiqələr |
+| **Əsas Məqsəd** | Gündəlik biznes tranzaksiyalarını qeyd etmək (Polis satışı, ödəniş) | İdarəetmə qərarları üçün tarixi trendləri və aqreqatları təhlil etmək |
+| **Dizayn Modeli** | 3NF (Normallaşdırılmış, dublikatsız çoxsaylı cədvəllər) | Star Schema / Snowflake (Denormallaşdırılmış Fakt və Ölçülər) |
+| **Əsas Əməliyyat** | Çoxlu sürətli `INSERT`, `UPDATE`, `DELETE` (Sətir-bə-sətir) | Kütləvi oxuma (`SELECT`), `GROUP BY`, Window funksiyaları (Batch) |
+| **Məlumat Dərinliyi** | Yalnız cari məlumatlar (Son 6–12 ay) | İllərlə toplanmış nəhəng tarixi məlumatlar (5–10 il) |
+| **Cavab Gözləntisi** | Millisaniyələr | Saniyələr və ya dəqiqələr |
 
 ---
 
 ### 2.2. Kimball Fakt və Ölçü Cədvəlləri
-- **Fakt Cədvəlləri (Fact Tables)**:
-  - Biznes prosesinin ölçülə bilən rəqəmsal nəticələrini (Measures/Metrics) saxlayır: məsələn, `premium_amount`, `claim_payout`, `deductible_amount`.
-  - Ölçü cədvəllərinə bağlanan xarici açarları (Foreign Keys) ehtiva edir.
-  - **Fakt növləri**:
-    - *Transactional Fact*: Hər bir fərdi əməliyyatı qeyd edir (məsələn: hər bir ödəniş).
-    - *Periodic Snapshot Fact*: Müəyyən dövrün sonu üçün vəziyyət (məsələn: hər ayın sonuna aktiv polislərin cəmi).
-    - *Accumulating Snapshot Fact*: Müəyyən mərhələli prosesin başlanğıcından sonuna qədərki gedişatı (məsələn: qəza hadisəsinin qeydə alınması $\rightarrow$ ekspertiza $\rightarrow$ təsdiq $\rightarrow$ ödəniş).
-- **Ölçü Cədvəlləri (Dimension Tables)**:
-  - Faktlara kontekst verir ("Kim? Harada? Nə vaxt? Hansı şərtlərlə?").
-  - Mətn xarakterli və təsviri atributlardan ibarətdir: `customer_name`, `gender`, `car_model`, `agent_branch`.
-- **Conformed Dimensions (Vahid Ölçülər)**:
-  - Şirkətdə fərqli fakt cədvəlləri (məsələn, `FactPolicy` və `FactClaims`) tərəfindən eyni mənada istifadə olunan ortaq ölçü cədvəlidir (məsələn: `DimCustomer` və ya `DimDate`). Bu, fərqli departamentlərin hesabatlarının bir-biri ilə uzlaşmasını təmin edir (**Single Version of the Truth**).
-- **Surrogate Keys (Süni Açarlar)**:
-  - Ölçü cədvəllərində ilkin açar (PK) kimi biznes açarı (məsələn, Müştərinin FİN kodu və ya Şəxsiyyət Vəsiqəsi) **istifadə olunmur**!
-  - Əvəzində süni, artan tam ədəd (`customer_key BIGINT`) yaradılır.
-  - *Niyə vacibdir?* 
-    1) Təbii sistemlərdəki açarlar dəyişə və ya xətalı daxil edilə bilər.
-    2) **SCD Type 2** tətbiq edərkən eyni müştərinin 3 fərqli tarixi sətri ola bilər; FİN unikal qala bilməz, amma `customer_key` hər sətir üçün unikal olur.
-    3) Rəqəmsal `BIGINT` üzrə `JOIN` simvol tipli (`VARCHAR`) `JOIN`-dən 10 dəfələrlə sürətlidir.
+
+Ralph Kimball metodologiyası analitik anbarları iki əsas cədvəl kateqoriyasına bölür:
+
+#### Fakt Cədvəlləri (Fact Tables)
+Fakt cədvəlləri biznes prosesinin ölçülə bilən rəqəmsal nəticələrini (Measures/Metrics) və ölçü cədvəllərinə bağlanan xarici açarları (Foreign Keys) saxlayır.
+
+Data mühəndisliyində istifadə olunan 3 əsas fakt cədvəli növü mövcuddur:
+
+| Fakt Cədvəli Növü | Mahiyyəti | Sığorta Sahəsindən Nümunə | Yenilənmə Davranışı |
+| :--- | :--- | :--- | :--- |
+| **Transactional Fact** | Hər bir fərdi əməliyyat anını qeyd edir. Ən xırda qranulyarlıq səviyyəsidir. | Hər bir sığorta polisin satışı və ya hər bir fərdi kompensasiya ödənişi. | Yalnız əlavə edilir (`INSERT-only`), heç vaxt dəyişdirilmir. |
+| **Periodic Snapshot Fact** | Müəyyən zaman fasiləsinin (gün, ay, rüb) sonuna olan ümumi vəziyyəti əks etdirir. | Hər ayın sonuna olan aktiv polislərin ümumi sayı və toplam yığılmış sığorta haqqı. | Dövri olaraq (məsələn, hər ayın 1-i) hesablanıb yazılır. |
+| **Accumulating Snapshot Fact** | Çoxmərhələli biznes prosesinin başlanğıcından yekununa qədərki bütün status və tarixlərini tək sətirdə izləyir. | Sığorta hadisəsinin gedişatı: Qəzanın baş verməsi $\rightarrow$ İddianın qeydiyyatı $\rightarrow$ Ekspertiza $\rightarrow$ Təsdiq $\rightarrow$ Ödəniş tarixi. | Prosesin hər addımında mövcud sətir `UPDATE` edilir. |
+
+#### Ölçü Cədvəlləri (Dimension Tables)
+Ölçü cədvəlləri faktlara dolğun kontekst verir ("Kim? Harada? Nə vaxt? Hansı şərtlərlə?"). Bu cədvəllər mətn xarakterli və təsviri atributlardan ibarətdir: `customer_name`, `gender`, `car_model`, `branch_name`.
+
+#### Vahid Ölçülər (Conformed Dimensions)
+Müəssisədə fərqli departamentlərin fakt cədvəlləri (məsələn, `FactPolicies` və `FactClaims`) tərəfindən ortaq istifadə olunan ölçü cədvəlləridir (məsələn, `DimCustomer` və `DimDate`). Vahid ölçülər şirkət daxilində tək bir həqiqət mənbəyinin (**Single Source of Truth**) formalaşmasını təmin edir.
+
+#### Süni Açarlar (Surrogate Keys)
+Ölçü cədvəllərində ilkin açar (PK) kimi mənbə sistemdən gələn təbii açarlar (məsələn, FİN kod və ya seriya nömrəsi) istifadə olunmur. Əvəzində süni, artan tam ədəd (`customer_key BIGINT`) yaradılır.
+
+Surrogate Key istifadəsinin 3 mühüm səbəbi:
+1. **Mənbə sistemlərdən asılılığı aradan qaldırır:** Mənbə sistemdə unikal identifikator dəyişə və ya xətalı daxil edilə bilər.
+2. **SCD Type 2 tarixçəsini mümkün edir:** Eyni müştərinin zamanla 3 fərqli tarixi sətri olduqda, FİN kod unikal qala bilməz, lakin hər sətir üçün fərqli `customer_key` yaranır.
+3. **Sorğu performansını artırır:** Tam ədəd (`BIGINT`) üzrə `JOIN` simvol tipli (`VARCHAR`) açarlarla müqayisədə 5-10 dəfə daha sürətli işləyir.
 
 ---
 
 ### 2.3. Slowly Changing Dimensions (SCD Növləri)
 
-Müştərinin ünvanı, telefon nömrəsi və ya risk qrupu zamanla dəyişdikdə Data Warehouse-da bu dəyişiklik necə idarə olunur?
+Müştərinin ünvanı, telefon nömrəsi və ya risk qrupu zamanla dəyişdikdə Data Warehouse-da bu dəyişikliyin idarə edilməsi üçün Slowly Changing Dimension (SCD) texnikalarından istifadə olunur:
 
-- **SCD Type 0 (Fixed / Dəyişməz)**:
-  - Məlumat heç vaxt dəyişdirilmir. Məsələn: Müştərinin doğum tarixi (`birth_date`).
-- **SCD Type 1 (Overwrite / Üzərinə Yazmaq)**:
-  - Köhnə məlumat silinir, yeni dəyər yerinə yazılır. Tarixçə saxlanılmır.
-  - *İstifadə yeri*: Orfoqrafik səhvlərin düzəldilməsi (məsələn, addakı hərf səhvi).
-  - *Mənfi cəhət*: Keçmiş hesabatları təkrar çıxardıqda nəticə dəyişir (Audit qorunmur).
-- **SCD Type 2 (Add New Row / Yeni Sətir Əlavə Etmək — Standart)**:
-  - Köhnə sətir bağlanır (`valid_to = CURRENT_DATE, is_current = FALSE`), yeni dəyərlə təzə bir sətir əlavə olunur (`valid_from = CURRENT_DATE, valid_to = '9999-12-31', is_current = TRUE`).
-  - *Üstünlük*: Tarixi həqiqət 100% qorunur! 2024-cü ildəki hadisəni analiz edərkən müştərinin həmin tarixdəki köhnə ünvanı və risk dərəcəsi görünür.
-- **SCD Type 3 (Add New Column / Əlavə Sütun)**:
-  - Cədvələ `previous_risk_class` və `current_risk_class` kimi sütunlar əlavə olunur. Yalnız son iki vəziyyəti saxlayır, çox pilləli tarixçə üçün yararsızdır.
+| SCD Növü | İzahı və Mexanizmi | Tarixçə Saxlanırmı? | Sığorta Tətbiqi və Nümunə |
+| :--- | :--- | :--- | :--- |
+| **SCD Type 0** | Dəyişməz ölçü. Məlumat bir dəfə yazılır və heç vaxt yenilənmir. | Xeyr (Dəyişiklik qadağandır) | Müştərinin doğum tarixi (`birth_date`). |
+| **SCD Type 1** | Köhnə məlumatın üzərinə birbaşa yeni məlumat yazılır. | Xeyr (Keçmiş itirilir) | Orfoqrafik xətaların və ya telefon nömrəsinin düzəldilməsi. |
+| **SCD Type 2** | Köhnə sətir bağlanır (`valid_to = CURRENT_DATE, is_current = FALSE`), yeni dəyərlə təzə bir sətir əlavə edilir. | **Bəli (100% Tam Audit)** | Müştərinin risk kateqoriyasının və ya yaşayış ünvanının dəyişməsi. |
+| **SCD Type 3** | Cədvələ əlavə sütun əlavə edilir (`previous_risk_group`, `current_risk_group`). | Yalnız son 2 vəziyyət | Yalnız əvvəlki və hazırkı vəziyyəti müqayisə etmək üçün məhdud ssenarilər. |
 
 ---
 
 ### 2.4. Star Schema vs Snowflake Schema
-- **Star Schema (Ulduz Sxemi)**: Bütün ölçü cədvəlləri birbaşa mərkəzdəki Fakt cədvəlinə bağlanır. Ölçülər denormallaşdırılıb (məsələn: Şəhər, Rayon və Ölkə hamısı `DimLocation` cədvəlindədir). Sorğular çox sadə və ən yüksək sürətli `JOIN`-lərə malikdir.
-- **Snowflake Schema (Qar Dənəciyi)**: Ölçü cədvəllərinin özü də daxildə normallaşdırılır (məsələn: `DimCity` $\rightarrow$ `DimCountry`). Saxlama yerinə azca qənaət edir, lakin sorğularda çoxlu əlavə `JOIN` tələb etdiyi üçün analitikada tövsiyə olunmur.
+
+| Parametr | Ulduz Sxemi (Star Schema) | Qar Dənəciyi (Snowflake Schema) |
+| :--- | :--- | :--- |
+| **Quruluş** | Bütün ölçülər birbaşa mərkəzdəki fakt cədvəlinə bağlanır. | Ölçü cədvəllərinin özləri də daxildə normallaşdırılır (alt-cədvəllərə bölünür). |
+| **Normallaşdırma** | Tam denormallaşdırılıb (Şəhər, Rayon, Ölkə eyni cədvəldədir). | Qismən normallaşdırılıb (`City` $\rightarrow$ `Region` $\rightarrow$ `Country`). |
+| **JOIN Əməliyyatları** | Çox sadə və az sayda `JOIN` (Maksimum sorğu sürəti). | Çoxlu pilləli `JOIN`-lər tələb edir və sorğunu ləngidir. |
+| **DWH Tövsiyəsi** | **Kimball standartı və ən yaxşı seçim.** | Müasir analitikada nadir hallarda istifadə olunur. |
 
 ---
 
-### 2.5. Data Vault 2.0 Xülasəsi
-Çox böyük və tez-tez dəyişən korporativ mühitlərdə tətbiq olunan xüsusi modelləşdirmə:
-- **Hubs**: Yalnız biznes açarlarını saxlayır (`HashKey`, `CustomerBusinessKey`, `LoadDate`).
-- **Links**: Hub-lar arasındakı əlaqələri saxlayır (`LinkPolicyCustomer`).
-- **Satellites**: Zamanla dəyişən bütün təsviri atributları və tarixçəni saxlayır.
-- *Üstünlük*: Mənbə sistemlərdən asılılığı aradan qaldırır, paralel ETL-ə tam imkan verir və 100% audit təmin edir.
+### 2.5. Data Vault 2.0 Memarlığı
+
+Nəhəng korporasiyalarda və yüzlərlə mənbə sistemi olan mühitlərdə tətbiq edilən xüsusi modelləşdirmə yanaşmasıdır:
+- **Hubs:** Yalnız unikal biznes açarlarını saxlayır (`HashKey`, `CustomerBusinessKey`, `LoadDate`).
+- **Links:** Hub-lar arasındakı biznes əlaqələrini təmsil edir (`LinkPolicyCustomer`).
+- **Satellites:** Bütün təsviri atributları və onların zaman daxilindəki tam tarixçəsini saxlayır.
 
 ---
 
@@ -162,7 +176,7 @@ Aşağıdakı sxem Atəşgah Sığorta-nın əsas biznes proseslərini (Polis sa
 
 ## 3. Kod nümunələri (Dialect Tabs ilə)
 
-### Nümunə 1: SCD Type 2 İcrası (SQL Server MERGE vs PostgreSQL CTE/Procedure)
+### Nümunə 1: SCD Type 2 İcrası (SQL Server vs PostgreSQL PL/pgSQL)
 
 Müştərinin risk dərəcəsi və ya ünvanı dəyişdikdə köhnə sətri qapadıb yeni sətir əlavə edən klassik SCD Type 2 ETL addımı:
 
@@ -265,8 +279,7 @@ Orfoqrafik xətaları və ya telefon nömrəsini tarixçə saxlamadan yeniləmə
 :::tabs
 @tab PostgreSQL
 ```sql
--- Dialect: PostgreSQL
--- SCD Type 1: Mövcud olanı yerində yenilə, olmayanları əlavə et
+-- Dialect: PostgreSQL (ON CONFLICT DO UPDATE)
 INSERT INTO public.dim_customer_scd1 (customer_id, full_name, phone_number, updated_at)
 SELECT customer_id, full_name, phone_number, CURRENT_TIMESTAMP
 FROM public.stage_customer
@@ -297,19 +310,22 @@ WHERE dim.FullName <> stg.FullName OR dim.PhoneNumber <> stg.PhoneNumber;
 ## 4. Tez-tez edilən səhvlər
 
 > [!WARNING]
-> **Diqqət: Fakt Cədvəllərində Biznes Açarlarından (Natural Keys) İstifadə Etmək**
+> **Fakt Cədvəllərində Təbii Açarlardan (Natural Keys) İstifadə Etmək**
 > Ən böyük memarlıq səhvi Fakt cədvəlində `customer_id` (məsələn, FİN kod) saxlamaqdır. Əgər müştəri üçün SCD Type 2 tətbiq olunubsa, `Fact.customer_id = Dim.customer_id` üzrə `JOIN` etdikdə həmin müştərinin həm 2024, həm 2025, həm də 2026-cı il versiyaları eyni anda çıxacaq və **bütün sığorta haqları 3 dəfə şişəcək (Cartesian Explosion)**! Fakt cədvəlində mütləq hadisə anında aktiv olan süni açar (`customer_key`) saxlanmalıdır.
 
 > [!NOTE]
-> **Qeyd: Vaxt Ölçüsündə (DimDate) Standart `DATE` Tipini Açara Çevirməmək**
+> **Tarix Ölçüsündə (DimDate) Standart `DATE` Tipini Açara Çevirməmək**
 > Analitik sorğularda `WHERE IssueDate >= '2026-01-01'` yazmaq əvəzinə `DimDate` cədvəlindən tam ədəd formatında `date_key` (məsələn: `20260101` integer) istifadə etmək cədvəl həcminə və `JOIN` sürətinə böyük üstünlük qazandırır.
 
 ---
 
 ## 5. Vakansiya ilə əlaqə (Atəşgah Sığorta)
 
-- **Vakansiya tələbi**: *"Məlumatların saxlanması, emalı, inteqrasiyası prinsipləri və korporativ arxitektura standartlarının tətbiqi... Analitik hesabatlılıq üçün modelləşdirmə."*
-- **Sənin rolun**: Sığorta polisləri, müqavilə şərtləri, müştəri risk profilləri və sığorta hadisələri (claims) üçün vahid Data Mart və Star Schema modellərini layihələndirmək; SCD Type 2 mexanizmini quraraq müştəri seqmentasiyasının tarixi dəqiqliyini təmin etmək.
+- **Vakansiya Tələbi:** *"Məlumatların saxlanması, emalı, inteqrasiyası prinsipləri və korporativ arxitektura standartlarının tətbiqi... Analitik hesabatlılıq üçün modelləşdirmə."*
+- **Sənin Rolun:** 
+  1. Sığorta polisləri, müqavilə şərtləri, müştəri risk profilləri və sığorta hadisələri (claims) üçün vahid Data Mart və Star Schema modellərini layihələndirmək.
+  2. Müştəri ünvan və risk dərəcələrinin dəyişməsini SCD Type 2 mexanizmi ilə quraraq keçmiş dövrlərin maliyyə hesabatlarının dəqiqliyini qorumaq.
+  3. Bütün ölçü cədvəllərində Surrogate Key-lərdən istifadə edərək `JOIN` əməliyyatlarını sürətləndirmək və mənbə sistemlərindən asılılığı aradan qaldırmaq.
 
 ---
 

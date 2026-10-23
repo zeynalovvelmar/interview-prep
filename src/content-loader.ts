@@ -113,7 +113,7 @@ function extractHeadings(markdown: string): { headings: HeadingItem[]; modifiedM
     const cleanTitle = title.replace(/\*\*/g, '').trim();
     const id = slugify(cleanTitle);
     headings.push({ id, text: cleanTitle, level });
-    return `<h${level} id="${id}">${title}</h${level}>`;
+    return `<h${level} id="${id}">${cleanTitle}</h${level}>`;
   });
 
   return { headings, modifiedMarkdown };
