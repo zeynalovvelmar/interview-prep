@@ -102,7 +102,7 @@ export async function renderHomePage(): Promise<HTMLElement> {
               <td><span class="readiness-badge badge-mid">Orta – Güclü</span></td>
               <td>
                 CV Layihəmdə MinIO (S3-compatible) üzərində Medallion memarlığı və Delta Lake ilə işləmişəm; Iceberg nəzəriyyəsini mənimsəyirəm.
-                <a href="#/topics" class="table-link">Mövzulara bax $\rightarrow$</a>
+                <a href="#/topics/lakehouse-ve-table-formatlari" class="table-link">Mövzuya bax $\rightarrow$</a>
               </td>
             </tr>
             <tr>
