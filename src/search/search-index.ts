@@ -20,11 +20,13 @@ export class SearchIndexManager {
       }
     });
 
-    const [topics, questions, glossary] = await Promise.all([
+    const [topics, questions, glossary, projects] = await Promise.all([
       ContentLoader.getTopics(),
       ContentLoader.getQuestions(),
-      ContentLoader.getGlossary()
+      ContentLoader.getGlossary(),
+      ContentLoader.getProjects()
     ]);
+
 
     const items: SearchItem[] = [];
 
@@ -73,7 +75,23 @@ export class SearchIndexManager {
       this.itemsMap.set(item.id, item);
     }
 
+    // Index projects
+    for (const p of projects) {
+      const item: SearchItem = {
+        id: `project-${p.slug}`,
+        type: 'project',
+        title: p.title,
+        category: 'CV Layihəsi',
+        content: `${p.subtitle || ''} ${p.tags?.join(' ') || ''} ${p.rawMarkdown.slice(0, 1000)}`,
+        url: `#/projects/${p.slug}`,
+        badge: 'CV Layihəsi'
+      };
+      items.push(item);
+      this.itemsMap.set(item.id, item);
+    }
+
     this.miniSearch.addAll(items);
+
     this.isInitialized = true;
   }
 

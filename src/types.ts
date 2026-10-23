@@ -54,12 +54,29 @@ export interface ProgressData {
   questions: Record<string, { status: QuestionStatus; updatedAt: number }>;
 }
 
+export interface ProjectFrontmatter {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle?: string;
+  date: string;
+  role: string;
+  tags: string[];
+}
+
+export interface Project extends ProjectFrontmatter {
+  rawMarkdown: string;
+  html: string;
+  headings: HeadingItem[];
+}
+
 export interface SearchItem {
   id: string;
-  type: 'topic' | 'question' | 'glossary';
+  type: 'topic' | 'question' | 'glossary' | 'project';
   title: string;
   category: string;
   content: string;
   url: string;
   badge?: string;
 }
+

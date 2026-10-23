@@ -7,7 +7,7 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-yaml';
 import 'prismjs/components/prism-docker';
 import 'prismjs/components/prism-json';
-import { Topic, Question, GlossaryTerm, HeadingItem } from './types';
+import { Topic, Question, GlossaryTerm, HeadingItem, Project } from './types';
 
 // Simple frontmatter parser
 function parseFrontmatter(raw: string): { data: Record<string, any>; content: string } {
@@ -212,6 +212,54 @@ export class ContentLoader {
     this.cachedGlossary = glossary;
     return glossary;
   }
+
+  private static cachedProjects: Project[] | null = null;
+
+  public static async getProjects(): Promise<Project[]> {
+    if (this.cachedProjects) return this.cachedProjects;
+
+    const projectModules = import.meta.glob('/content/projects/*.md', {
+      query: '?raw',
+      eager: true,
+      import: 'default'
+    }) as Record<string, string>;
+
+    const projects: Project[] = [];
+
+    for (const [path, rawContent] of Object.entries(projectModules)) {
+      const { data, content } = parseFrontmatter(rawContent);
+      const filename = path.split('/').pop()?.replace('.md', '') || 'project';
+
+      let processed = transformCallouts(content);
+      processed = transformMiniQuizzes(processed);
+      processed = transformDialectTabs(processed);
+      const { headings, modifiedMarkdown } = extractHeadings(processed);
+
+      const html = await marked.parse(modifiedMarkdown, { async: true });
+
+      projects.push({
+        id: data.id || filename,
+        slug: data.slug || filename,
+        title: data.title || filename,
+        subtitle: data.subtitle || '',
+        date: data.date || '',
+        role: data.role || 'Data Mühəndisi',
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        rawMarkdown: content,
+        html,
+        headings
+      });
+    }
+
+    this.cachedProjects = projects;
+    return projects;
+  }
+
+  public static async getProjectBySlug(slug: string): Promise<Project | undefined> {
+    const projects = await this.getProjects();
+    return projects.find(p => p.slug === slug || p.id === slug);
+  }
+
 
   public static highlightCode(code: string, language: string): string {
     const lang = language.toLowerCase();

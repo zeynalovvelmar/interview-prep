@@ -2,6 +2,8 @@ import { renderHomePage } from './pages/home';
 import { renderTopicsListPage } from './pages/topics-list';
 import { renderTopicDetailPage } from './pages/topic-detail';
 import { renderQABankPage } from './pages/qa-bank';
+import { renderProjectsListPage } from './pages/projects-list';
+import { renderProjectDetailPage } from './pages/project-detail';
 import { renderPlaceholderPage } from './pages/placeholder';
 import { Sidebar } from './components/sidebar';
 import { updateBottomNavActive } from './components/bottom-nav';
@@ -56,7 +58,10 @@ export class Router {
       const targetId = queryParams.get('id') || undefined;
       pageElement = await renderQABankPage(targetId);
     } else if (path === '/projects') {
-      pageElement = renderPlaceholderPage('CV Layihələri', 'M5', '3 layihənin dərin təhlili: 60s pitch, 3 dəqiqəlik izah, 20+ çətin sual.');
+      pageElement = await renderProjectsListPage();
+    } else if (path.startsWith('/projects/')) {
+      const slug = path.replace('/projects/', '');
+      pageElement = await renderProjectDetailPage(slug);
     } else if (path === '/gaps') {
       pageElement = renderPlaceholderPage('Boşluqlar & Strategiya', 'M6', 'Təcrübədə olmayan sahələr üzrə dürüst və güclü cavab strategiyaları.');
     } else if (path === '/scenarios') {
