@@ -60,26 +60,26 @@ Hər biri 1 səhifəlik xülasə formatında olan dərslərin auditi:
 ---
 
 ### Mərhələ 3: 3 CV Layihəsinin Məzmun Auditi
-- [ ] **Addım 3.1: `01-lakehouse-medallion.md`** (60s pitch, 3m izah, diaqram, qərarlar cədvəli, 14 sual-cavab, metrikalar)
-- [ ] **Addım 3.2: `02-crypto-streaming.md`** (Kafka KRaft, Spark Streaming, Checkpoint, 14 sual-cavab)
-- [ ] **Addım 3.3: `03-banking-batch-star-schema.md`** (5 DQ qapısı, Karantin, SCD2, Kimball Star Schema, 15 sual-cavab)
+- [x] **Addım 3.1: `01-lakehouse-medallion.md`** (60s pitch, 3m izah, diaqram, qərarlar cədvəli, 14 sual-cavab, metrikalar — Tamamlandı)
+- [x] **Addım 3.2: `02-crypto-streaming.md`** (Kafka KRaft, Spark Streaming, Checkpoint, 14 sual-cavab — Tamamlandı)
+- [x] **Addım 3.3: `03-banking-batch-star-schema.md`** (5 DQ qapısı, Karantin, SCD2, Kimball Star Schema, 15 sual-cavab — Tamamlandı)
 
 ---
 
 ### Mərhələ 4: Praktiki Bölmələr və Məşqlər
-- [ ] **Addım 4.1: `gaps.md`** (6 boşluq üzrə dürüst yanaşma, qadağan ifadələr, 30/60/90 plan)
-- [ ] **Addım 4.2: `scenarios.md`** (5 istehsalat ssenarisinin model həlləri)
-- [ ] **Addım 4.3: `sql-practice.json`** (10 SQL tapşırığının T-SQL və PostgreSQL həllərinin doğruluğu)
-- [ ] **Addım 4.4: `behavioral.md`** (30s/1m/2m özünü təqdimat, 4 STAR hekayəsi, 10 ağıllı sual)
-- [ ] **Addım 4.5: `glossary.json`** (40 terminin tərifi və lüğət axtarışı)
-- [ ] **Addım 4.6: `mock.ts`** (Mock interview axını, taymer və öz-qiymətləndirmə mexanizmi)
+- [x] **Addım 4.1: `gaps.md`** (6 boşluq üzrə dürüst yanaşma, qadağan ifadələr, 30/60/90 plan — Tamamlandı)
+- [x] **Addım 4.2: `scenarios.md`** (5 istehsalat ssenarisinin model həlləri — Tamamlandı)
+- [x] **Addım 4.3: `sql-practice.json`** (10 SQL tapşırığının T-SQL və PostgreSQL həllərinin doğruluğu — Tamamlandı)
+- [x] **Addım 4.4: `behavioral.md`** (30s/1m/2m özünü təqdimat, 4 STAR hekayəsi, 10 ağıllı sual — Tamamlandı)
+- [x] **Addım 4.5: `glossary.json`** (40 terminin tərifi və lüğət axtarışı — Tamamlandı)
+- [x] **Addım 4.6: `mock.ts`** (Mock interview axını, taymer və öz-qiymətləndirmə mexanizmi — Tamamlandı)
 
 ---
 
 ### Mərhələ 5: Texniki Renderer və UI Görünüş Testi
-- [ ] **Addım 5.1: Markdown Renderer Auditi**
-  - `src/content-loader.ts` daxilində başlıqlardan `**` təmizlənməsi və `extractHeadings` funksiyasının HTML çıxışının yoxlanması.
-- [ ] **Addım 5.2: CSS və Tipografiya**
-  - Siyahıların (`ul`, `ol`, `li`), cədvəllərin və `callout` bloklarının brauzerdə təmiz və oxunaqlı açılması.
-- [ ] **Addım 5.3: Çoxlu Ekran Testi (Responsive)**
-  - 375px (mobil), 768px (planşet) və 1440px (desktop) ekranlarda üfüqi sürüşmənin (overflow) olmaması və kod bloklarının rahat oxunması.
+- [x] **Addım 5.1: Markdown Renderer Auditi** (Tamamlandı)
+  - `src/content-loader.ts` daxilində başlıqlardan `**` təmizlənməsi və `extractHeadings` çıxışında təmiz başlıq adının tətbiqi icra olundu.
+- [x] **Addım 5.2: CSS və Tipografiya** (Tamamlandı)
+  - `src/style.css`-ə `.markdown-body table` (border, padding, zebra background, overflow-x: auto) və blockquote stilləri əlavə edildi.
+- [x] **Addım 5.3: Çoxlu Ekran Testi (Responsive)** (Tamamlandı)
+  - Kod blokları və cədvəllər fərdi daxili horizontal scroll ilə təmin edildi, mobil (375px), planşet (768px) və desktop (1440px) üzrə səhifə overflow-u qarşısı alındı.
