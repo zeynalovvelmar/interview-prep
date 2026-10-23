@@ -74,6 +74,27 @@ function transformMiniQuizzes(markdown: string): string {
   });
 }
 
+// Transform dialect tabs (e.g. :::tabs @tab T-SQL ... @tab PostgreSQL ... :::)
+function transformDialectTabs(markdown: string): string {
+  return markdown.replace(/:::tabs\s*([\s\S]*?):::/g, (_match, inner) => {
+    const rawTabs = inner.split(/@tab\s+/).filter((s: string) => s.trim().length > 0);
+    let buttonsHtml = '';
+    let panesHtml = '';
+
+    rawTabs.forEach((tabBlock: string, idx: number) => {
+      const newlineIdx = tabBlock.indexOf('\n');
+      const tabTitle = newlineIdx !== -1 ? tabBlock.slice(0, newlineIdx).trim() : 'Tab';
+      const tabBody = newlineIdx !== -1 ? tabBlock.slice(newlineIdx).trim() : tabBlock.trim();
+      const isActive = idx === 0 ? 'active' : '';
+
+      buttonsHtml += `<button type="button" class="dialect-tab-btn ${isActive}" data-tab-target="tab-panel-${idx}">${tabTitle}</button>`;
+      panesHtml += `<div class="dialect-tab-pane ${isActive}" data-tab-panel="tab-panel-${idx}">\n\n${tabBody}\n\n</div>`;
+    });
+
+    return `<div class="dialect-tabs-container"><div class="dialect-tabs-nav" role="tablist">${buttonsHtml}</div><div class="dialect-tabs-body">${panesHtml}</div></div>\n`;
+  });
+}
+
 // Slugify heading text
 export function slugify(text: string): string {
   return text
@@ -121,6 +142,7 @@ export class ContentLoader {
       // Markdown transformations
       let processed = transformCallouts(content);
       processed = transformMiniQuizzes(processed);
+      processed = transformDialectTabs(processed);
       const { headings, modifiedMarkdown } = extractHeadings(processed);
 
       // Parse markdown to HTML

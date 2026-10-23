@@ -1,13 +1,13 @@
 ---
-id: "02-sql-server-postgresql-miqrasiya"
+id: "04-sql-server-postgresql-miqrasiya"
 slug: "sql-server-postgresql-miqrasiya"
-order: 2
+order: 4
 title: "SQL Server -> PostgreSQL Miqrasiyası"
 category: "Miqrasiya"
 priority: "high"
 readiness: "oyrenmeliyem"
 vacancyLink: "Microsoft SQL Server-dən PostgreSQL-ə miqrasiyanın layihələndirilməsi və idarə edilməsi"
-tags: ["Miqrasiya", "SQL Server", "PostgreSQL", "Data Types", "Cutover", "pgloader"]
+tags: ["Miqrasiya", "SQL Server", "PostgreSQL", "Data Types", "Cutover", "pgloader", "CDC"]
 summary: "T-SQL-dən PL/pgSQL-ə çevrilmə, data tiplərinin uyğunlaşdırılması, kəsilməsiz (near-zero downtime) keçid və yoxlama (validation) strategiyaları."
 ---
 
@@ -47,10 +47,14 @@ Bir verilənlər bazasını SQL Server-dən PostgreSQL-ə köçürmək köhnə b
 
 ---
 
-## 3. Kod nümunələri
+## 3. Kod nümunələri (Dialect Tabs ilə)
 
 ### Nümunə 1: T-SQL vs PL/pgSQL Sintaksis Fərqləri
 
+Sığorta polisinin statusunu yoxlayan və yeniləyən prosedur:
+
+:::tabs
+@tab T-SQL
 ```sql
 -- Dialect: T-SQL (Microsoft SQL Server)
 -- Sığorta polisinin statusunu yoxlayan və yeniləyən prosedur
@@ -73,7 +77,7 @@ BEGIN
     END
 END;
 ```
-
+@tab PostgreSQL
 ```sql
 -- Dialect: PL/pgSQL (PostgreSQL)
 -- Eyni məntiqin PostgreSQL-də icrası
@@ -96,6 +100,9 @@ BEGIN
 END;
 $$;
 ```
+:::
+
+---
 
 ### Nümunə 2: Miqrasiyadan sonra data bütövlüyünün yoxlanması (Data Validation)
 

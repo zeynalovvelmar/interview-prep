@@ -1308,6 +1308,60 @@ p code, li code, td code {
   color: var(--primary);
 }
 
+/* Dialect Tabs Component (T-SQL vs PostgreSQL) */
+.dialect-tabs-container {
+  background-color: var(--code-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+.dialect-tabs-nav {
+  display: flex;
+  background-color: var(--code-header-bg);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.25rem 0.5rem 0 0.5rem;
+  gap: 0.25rem;
+  overflow-x: auto;
+}
+
+.dialect-tab-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+  min-height: 40px;
+  cursor: pointer;
+}
+
+.dialect-tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.dialect-tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dialect-tab-pane {
+  display: none;
+}
+
+.dialect-tab-pane.active {
+  display: block;
+}
+
+.dialect-tab-pane .code-block-wrapper {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
 /* Desktop Sticky TOC */
 .topic-toc-sidebar {
   display: none;

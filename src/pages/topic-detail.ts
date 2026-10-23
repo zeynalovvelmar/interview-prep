@@ -2,6 +2,7 @@ import { ContentLoader } from '../content-loader';
 import { ProgressManager } from '../state/progress';
 import { TableOfContents } from '../components/toc';
 import { enhanceCodeBlocks } from '../components/code-block';
+import { initDialectTabs } from '../components/dialect-tabs';
 
 export async function renderTopicDetailPage(slug: string): Promise<HTMLElement> {
   const container = document.createElement('div');
@@ -96,10 +97,11 @@ export async function renderTopicDetailPage(slug: string): Promise<HTMLElement> 
     </div>
   `;
 
-  // Attach code block enhancements
+  // Attach code block enhancements & dialect tabs
   const markdownBody = container.querySelector('#topic-markdown-body') as HTMLElement;
   if (markdownBody) {
     enhanceCodeBlocks(markdownBody);
+    initDialectTabs(markdownBody);
   }
 
   // Attach desktop TOC

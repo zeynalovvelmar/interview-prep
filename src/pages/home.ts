@@ -86,7 +86,7 @@ export async function renderHomePage(): Promise<HTMLElement> {
               <td><span class="readiness-badge badge-focus">Öyrənməliyəm</span></td>
               <td>
                 Production təcrübəm yoxdur; DMV-lər, Wait stats və asılılıq təhlilini nəzəri və Docker laboratoriyasında dərindən öyrənirəm.
-                <a href="#/topics/sql-server-memarligi" class="table-link">Mövzuya bax $\rightarrow$</a>
+                <a href="#/topics/microsoft-sql-server" class="table-link">Mövzuya bax $\rightarrow$</a>
               </td>
             </tr>
             <tr>
