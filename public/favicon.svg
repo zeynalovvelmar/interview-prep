@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="url(#grad)" />
+  <!-- Data layers icon / database stack -->
+  <ellipse cx="50" cy="28" rx="28" ry="10" fill="#ffffff" opacity="0.95"/>
+  <path d="M22,28 v16 c0,5.5 12.5,10 28,10 s28,-4.5 28,-10 v-16" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M22,46 v16 c0,5.5 12.5,10 28,10 s28,-4.5 28,-10 v-16" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M22,64 v10 c0,5.5 12.5,10 28,10 s28,-4.5 28,-10 v-10" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round"/>
+  <!-- Sparkle indicator -->
+  <circle cx="72" cy="25" r="4" fill="#38bdf8" />
+</svg>

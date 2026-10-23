@@ -1,0 +1,21 @@
+{
+  "name": "interview-prep",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "marked": "^15.0.7",
+    "minisearch": "^7.1.2",
+    "prismjs": "^1.29.0"
+  },
+  "devDependencies": {
+    "@types/prismjs": "^1.26.5",
+    "typescript": "^5.7.3",
+    "vite": "^6.2.0"
+  }
+}

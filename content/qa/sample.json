@@ -1,0 +1,82 @@
+[
+  {
+    "id": "qa-sql-01",
+    "category": "SQL & Verilənlər Bazası",
+    "difficulty": "Medium",
+    "question": "Clustered və Non-Clustered index arasındakı fərq nədir və cədvəldə niyə yalnız 1 Clustered index ola bilər?",
+    "answer": "Clustered index cədvəlin sətirlərinin diskdə fiziki saxlanma ardıcıllığını təyin edir (B-Tree strukturunun ən aşağı 'Leaf' səviyyəsi birbaşa cədvəlin öz məlumat səhifələridir). Məlumat fiziki olaraq diskdə yalnız tək bir ardıcıllıqla düzülə biləcəyi üçün cədvəldə yalnız 1 Clustered index ola bilər. Non-Clustered index isə kitabın sonundakı əlifba sırası göstəricisi kimidir: ayrıca bir strukturda açar dəyəri və həmin sətrin fiziki ünvanını (Row Locator / Pointer) saxlayır. Cədvəldə çoxlu Non-Clustered index ola bilər.",
+    "code": {
+      "language": "sql",
+      "dialect": "T-SQL",
+      "snippet": "-- Clustered index fiziki ardıcıllığı təyin edir\nCREATE CLUSTERED INDEX IX_Policies_PolicyID ON dbo.Policies(PolicyID);\n\n-- Non-Clustered index axtarışı sürətləndirən ayrıca strukturdur\nCREATE NONCLUSTERED INDEX IX_Policies_CustomerID ON dbo.Policies(CustomerID)\nINCLUDE (Premium, StartDate);"
+    },
+    "followUps": [
+      "Covering index nədir və Key Lookup xərcini necə aradan qaldırır?",
+      "Cədvəldə Heaps (indekssiz cədvəl) ilə Clustered index arasındakı seçim meyarları hansılardır?"
+    ]
+  },
+  {
+    "id": "qa-mig-01",
+    "category": "Miqrasiya",
+    "difficulty": "Hard",
+    "question": "SQL Server-dən PostgreSQL-ə miqrasiyada ən çox rast gəlinən data type uyğunsuzluqları hansılardır?",
+    "answer": "Ən kritik fərqlər: 1) NVARCHAR/NCHAR (SQL Server) PostgreSQL-də sadəcə VARCHAR və ya TEXT-ə çevrilir, çünki PostgreSQL standart olaraq UTF-8 ilə işləyir; 2) DATETIME2 və DATETIMEOFFSET PostgreSQL-də müvafiq olaraq TIMESTAMP və TIMESTAMPTZ olur (saat qurşağı dəqiqliyi vacibdir); 3) BIT (0/1) tipi PostgreSQL-də BOOLEAN (TRUE/FALSE) olur; 4) UNIQUEIDENTIFIER tipi PostgreSQL-də doğma UUID tipinə uyğun gəlir; 5) IDENTITY sütunları PostgreSQL-də GENERATED ALWAYS AS IDENTITY kimi təyin olunmalıdır; 6) MONEY tipi yerinə yuvarlaqlaşdırma xətalarını önləmək üçün dəqiq NUMERIC(18,2) seçilməlidir.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- PostgreSQL üçün düzgün uyğunlaşdırılmış DDL sxemi\nCREATE TABLE public.policies (\n    policy_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\n    policy_uuid UUID DEFAULT gen_random_uuid(),\n    is_active BOOLEAN DEFAULT TRUE,\n    premium NUMERIC(18,2) NOT NULL,\n    issued_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP\n);"
+    },
+    "followUps": [
+      "Quoted identifiers və case-sensitivity fərqlərinin tətbiq koduna təsiri necə idarə olunur?",
+      "T-SQL-dəki MERGE əmrini PostgreSQL-ə köçürərkən nələrə diqqət edilməlidir?"
+    ]
+  },
+  {
+    "id": "qa-lake-01",
+    "category": "Lakehouse & Memarlıq",
+    "difficulty": "Medium",
+    "question": "Data Lakehouse nədir və ənənəvi Data Warehouse ilə Data Lake-dən nə ilə fərqlənir?",
+    "answer": "Data Lakehouse — Data Lake-in ucuz, miqyaslanan obyekt saxlama imkanları (məsələn AWS S3 və ya MinIO) ilə Data Warehouse-un ACID tranzaksiya etibarlılığı, şema nəzarəti və sürətli analitik sorğu qabiliyyətini birləşdirən müasir məlumat memarlığıdır. Ənənəvi Data Lake-də 'Data Swamp' (xarabalıq) riski, fayl korlanması və konkurent yazmalarda konfliktlər olurdu. Lakehouse bunu müasir cədvəl formatları (Delta Lake, Apache Iceberg) ilə həll edir: hər bir dəyişiklik tranzaksiya loqunda qeyd olunur, Time Travel və ACID təmin edilir.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# Delta Lake formatında ACID və Time Travel ilə yazma\ndf_silver.write \\\n    .format('delta') \\\n    .mode('append') \\\n    .option('mergeSchema', 'true') \\\n    .save('s3a://insurance-lakehouse/silver/policies')"
+    },
+    "followUps": [
+      "Delta Lake ilə Apache Iceberg arasındakı əsas fərqlər hansılardır?",
+      "Medallion (Bronze/Silver/Gold) memarlığında hər qatın vəzifəsi nədir?"
+    ]
+  },
+  {
+    "id": "qa-pipe-01",
+    "category": "Airflow & Boru Kəməri",
+    "difficulty": "Medium",
+    "question": "Data boru kəmərində (ETL/DAG) 'İdempotentlik' (Idempotency) nə deməkdir və niyə həyati əhəmiyyət daşıyır?",
+    "answer": "İdempotentlik — eyni boru kəmərini (və ya DAG taskını) eyni giriş məlumatları ilə istənilən sayda təkrar işə saldıqda nəticənin dəyişməz qalması və dublikat məlumat yaratmaması xüsusiyyətidir. Məsələn, 2026-10-20 tarixli partisiya üçün Airflow taskı qəza edib təkrar icra olunduqda (retry/backfill), o, əvvəlcə həmin günün hədəf məlumatlarını təmizləməli (Overwrite) və ya UPSERT/MERGE etməlidir. Əgər sadəcə 'Append' edilsə, maliyyə hesabatlarında sığorta ödənişləri ikiqat artacaq.",
+    "code": {
+      "language": "python",
+      "dialect": "Python",
+      "snippet": "# İdempotent partisiya yazılışı (PySpark)\ndf_cleaned.write \\\n    .mode('overwrite') \\\n    .partitionBy('event_date') \\\n    .parquet('s3a://lakehouse/gold/daily_claims')"
+    },
+    "followUps": [
+      "Airflow-da 'catchup=True' parametrinə necə yanaşmalıyıq?",
+      "Quarantine pattern ilə xətalı məlumatlar idempotent şəkildə necə ayrılır?"
+    ]
+  },
+  {
+    "id": "qa-spark-01",
+    "category": "Spark & Paylanmış Hesablama",
+    "difficulty": "Hard",
+    "question": "PySpark-da 'Narrow' və 'Wide' transformasiyalar arasındakı fərq nədir və klaster performansına necə təsir edir?",
+    "answer": "Narrow transformasiyalarda hər bir çıxış partisiya tələbi yalnız TƏK bir giriş partisiyasından asılıdır (məsələn: map, filter, withColumn, union). Bu zaman şəbəkə üzərindən məlumat köçürməyə (Shuffle) ehtiyac qalmır, əməliyyat in-memory çox sürətlə icra olunur. Wide transformasiyalarda isə (məsələn: groupBy, distinct, join, repartition) nəticəni hesablamaq üçün bütün partisiya və executor-lar arasında məlumatların yer dəyişdirməsi (Shuffle) tələb olunur. Shuffle ən ağır I/O, şəbəkə və disk xərcinə səbəb olduğu üçün Wide əməliyyatların sayı optimallaşdırılmalı, kiçik cədvəllərdə isə 'broadcast join' tətbiq olunmalıdır.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "from pyspark.sql.functions import broadcast\n\n# Şəbəkə shuffle-ını aradan qaldıran Broadcast Join\njoined_df = large_claims_df.join(\n    broadcast(dim_policy_types_df),\n    'policy_type_id',\n    'inner'\n)"
+    },
+    "followUps": [
+      "Data skew (əyilmə) nədir və Wide join zamanı bir taskın ilişib qalmasına necə səbəb olur?",
+      "repartition() ilə coalesce() arasındakı fərq nədir?"
+    ]
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "name": "Data Mühəndisi Müsahibə Hazırlığı",
+  "short_name": "DE Prep",
+  "description": "Atəşgah Sığorta Şirkəti - Junior Data Mühəndisi vakansiyası üçün fərdi hazırlıq və təlim tətbiqi",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#1d4ed8",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

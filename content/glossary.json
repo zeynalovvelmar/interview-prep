@@ -1,0 +1,22 @@
+[
+  {
+    "term": "Buffer Pool",
+    "definition": "SQL Server-in operativ yaddaşında (RAM) 8 KB-lıq data səhifələrini keşləyən əsas yaddaş sahəsi."
+  },
+  {
+    "term": "Transaction Log (WAL)",
+    "definition": "Bütün dəyişikliklərin diskə yazılmazdan əvvəl ardıcıl olaraq qeydə alındığı LDF jurnalı."
+  },
+  {
+    "term": "CDC (Change Data Capture)",
+    "definition": "Verilənlər bazasındakı dəyişiklikləri (Insert, Update, Delete) loqdan oxuyaraq real vaxtda başqa sistemlərə axıdan mexanizm."
+  },
+  {
+    "term": "Idempotency",
+    "definition": "Eyni əməliyyatı təkrar icra etdikdə nəticənin dəyişməməsi və dublikat yaratmaması prinsipi."
+  },
+  {
+    "term": "Lakehouse",
+    "definition": "Obyekt yaddaşı (S3) üzərində ACID, Time Travel və Metadata idarəetməsi təqdim edən hibrid məlumat anbarı."
+  }
+]
