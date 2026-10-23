@@ -1,22 +1,162 @@
 [
   {
-    "term": "Buffer Pool",
-    "definition": "SQL Server-in operativ yaddaşında (RAM) 8 KB-lıq data səhifələrini keşləyən əsas yaddaş sahəsi."
+    "term": "ACID",
+    "definition": "Verilənlər bazası tranzaksiyalarının 4 etibarlılıq prinsipi: Atomicity (bütövlük), Consistency (uyğunluq), Isolation (təcridlilik) və Durability (davamlılıq)."
   },
   {
-    "term": "Transaction Log (WAL)",
-    "definition": "Bütün dəyişikliklərin diskə yazılmazdan əvvəl ardıcıl olaraq qeydə alındığı LDF jurnalı."
+    "term": "Airflow DAG",
+    "definition": "Directed Acyclic Graph — Apache Airflow-da tapşırıqlar arasında dövrsüz, istiqamətləndirilmiş asılılıqları təyin edən iş axını modeli."
+  },
+  {
+    "term": "Anti-Join",
+    "definition": "Bir cədvəldə olub digər əlaqəli cədvəldə qarşılığı OLMAYAN sətirləri tapmaq üçün istifadə olunan sorğu texnikası (LEFT JOIN ... IS NULL və ya NOT EXISTS)."
+  },
+  {
+    "term": "Apache Iceberg",
+    "definition": "Obyekt anbarları üzərində SQL mühərrikləri üçün hazırlanmış, mərkəzi Kataloq və iyerarxik manifest ağacı ilə işləyən açıq cədvəl formatı."
+  },
+  {
+    "term": "Autovacuum",
+    "definition": "PostgreSQL-də MVCC nəticəsində yaranan ölü sətirləri (dead tuples) arxa planda avtomatik təmizləyən və statistikaları yeniləyən fon prosesi."
+  },
+  {
+    "term": "Broadcast Join",
+    "definition": "Spark-da kiçik ölçülü cədvəlin bütün executor-lara nüsxələnərək şəbəkə üzərindən böyük shuffle əməliyyatını sıfıra endirən birləşmə növü."
+  },
+  {
+    "term": "Buffer Pool",
+    "definition": "SQL Server-in operativ yaddaşında (RAM) 8 KB-lıq data səhifələrini keşləyərək disk I/O xərclərini azaldan əsas yaddaş sahəsi."
+  },
+  {
+    "term": "Catalyst Optimizer",
+    "definition": "Apache Spark-ın DataFrame sorğularını analiz edərək optimal icra planına (DAG) çevirən daxili optimizasiya mühərriki."
   },
   {
     "term": "CDC (Change Data Capture)",
-    "definition": "Verilənlər bazasındakı dəyişiklikləri (Insert, Update, Delete) loqdan oxuyaraq real vaxtda başqa sistemlərə axıdan mexanizm."
+    "definition": "Verilənlər bazasındakı dəyişiklikləri (Insert, Update, Delete) birbaşa tranzaksiya loqundan oxuyaraq real vaxtda başqa sistemlərə axıdan mexanizm."
+  },
+  {
+    "term": "Checkpointing",
+    "definition": "Streaming sistemlərində (PySpark, Flink) cari ofsetlərin və aralıq vəziyyətlərin diskə yazılaraq xəta anında bərpasını təmin edən qoruma nöqtəsi."
+  },
+  {
+    "term": "Clustered Index",
+    "definition": "Cədvəlin sətirlərinin diskdə fiziki saxlanma ardıcıllığını təyin edən və cədvəldə yalnız 1 ədəd ola bilən B-Tree indeksi."
+  },
+  {
+    "term": "Compaction",
+    "definition": "Lakehouse-da real-time və ya tez-tez yazılan minlərlə xırda faylın birləşdirilərək optimal böyük Parquet fayllarına çevrilməsi prosesi (OPTIMIZE)."
+  },
+  {
+    "term": "Conformed Dimension",
+    "definition": "Müəssisə daxilində birdən çox fakt cədvəli tərəfindən eyni məna və vahid atributlarla paylaşılan ortaq dimensiya cədvəli (Ralph Kimball)."
+  },
+  {
+    "term": "Consumer Lag",
+    "definition": "Kafka-da mövzuya daxil olan sonuncu mesaj ofseti ilə istehlakçının oxuyub təsdiqlədiyi cari ofset arasındakı gecikmə fərqi."
+  },
+  {
+    "term": "CTE (Common Table Expression)",
+    "definition": "'WITH' açar sözü ilə yaradılan, sorğu müddətində mövcud olan və oxunaqlılığı artıran müvəqqəti adlandırılmış nəticə toplusu."
+  },
+  {
+    "term": "Cutover",
+    "definition": "Köhnə sistemdən yeni sistemə son keçidin həyata keçirildiyi və tətbiqlərin yeni bazaya yönləndirildiyi dəqiq planlaşdırılmış kəsim mərhələsi."
+  },
+  {
+    "term": "Data Lakehouse",
+    "definition": "Ucuz obyekt anbarı (S3) üzərində müasir cədvəl qatları ilə ACID, Time Travel və sürətli SQL analitikası təmin edən hibrid arxitektura."
+  },
+  {
+    "term": "Data Mesh",
+    "definition": "Mərkəzləşdirilmiş data komandası əvəzinə hər biznes domeninin öz məlumatlarına məhsul kimi (Data as a Product) sahiblik etdiyi memarlıq paradiqması."
+  },
+  {
+    "term": "Data SLA",
+    "definition": "Məlumatın biznes analitiklərinə hansı tamlıqda və ən geci saat neçəyə qədər çatdırılacağını müəyyən edən rəsmi daxili öhdəlik müqaviləsi."
+  },
+  {
+    "term": "Delta Lake",
+    "definition": "Parquet faylları üzərində '_delta_log' JSON jurnalı ilə ACID tranzaksiyaları və Time Travel təqdim edən açıq qaynaqlı saxlama qatı."
+  },
+  {
+    "term": "Deduplication",
+    "definition": "Boru kəmərində eyni unikal identifikatora malik təkrarlanan sətirlərin aşkarlanıb təmizlənməsi prosesi."
+  },
+  {
+    "term": "DMV (Dynamic Management Views)",
+    "definition": "SQL Server-in server vəziyyəti, sorğu statistikası və indeks istifadəsi barədə canlı diaqnostik məlumatlar təqdim edən daxili sistem görünüşləri."
+  },
+  {
+    "term": "Fact Table",
+    "definition": "Data Warehouse-da biznesdə baş verən hadisələri və kəmiyyət ölçülərini (metrikaları: satış məbləği, ödənilən zərər) saxlayan mərkəzi cədvəl."
+  },
+  {
+    "term": "Factless Fact Table",
+    "definition": "Daxilində heç bir ədədi metriki olmayan, yalnız hadisənin baş verdiyini və ya əlaqəni göstərən xarici açarlar yığımı olan fakt cədvəli."
   },
   {
     "term": "Idempotency",
-    "definition": "Eyni əməliyyatı təkrar icra etdikdə nəticənin dəyişməməsi və dublikat yaratmaması prinsipi."
+    "definition": "Eyni əməliyyatı və ya ETL borusunu eyni parametrlərlə təkrar icra etdikdə nəticənin dəyişməməsi və heç bir dublikat yaratmaması prinsipi."
   },
   {
-    "term": "Lakehouse",
-    "definition": "Obyekt yaddaşı (S3) üzərində ACID, Time Travel və Metadata idarəetməsi təqdim edən hibrid məlumat anbarı."
+    "term": "Kafka KRaft",
+    "definition": "Kafka 3+ versiyalarında ZooKeeper asılılığını ləğv edən və daxili Raft konsensus protokolu ilə işləyən metadata idarəetmə rejimi."
+  },
+  {
+    "term": "Lazy Evaluation",
+    "definition": "Hesablamanın dərhal deyil, yalnız son Action (məsələn, count, write) çağırıldıqda işə salınması prinsipi (Catalyst optimizasiyası üçün zəmin yaradır)."
+  },
+  {
+    "term": "Loss Ratio (Zərərlilik Nisbəti)",
+    "definition": "Sığorta şirkətinin gəlirliliyini ölçən əsas KPI: Ödənilmiş Zərərlərin Toplanmış Sığorta Haqlarına olan faiz nisbəti."
+  },
+  {
+    "term": "Medallion Architecture",
+    "definition": "Məlumatın mərhələli təmizlənməsini təşkil edən 3 qatlı Lakehouse modeli: Bronze (xammal), Silver (təmizlənmiş) və Gold (biznes analitikası)."
+  },
+  {
+    "term": "MVCC",
+    "definition": "Multi-Version Concurrency Control — oxucuların yazıçılara mane olmamasını təmin etmək üçün sətirlərin fərqli snapshot versiyalarını saxlayan mexanizm."
+  },
+  {
+    "term": "Orphan Record (Yetim Sətir)",
+    "definition": "Fakt cədvəlində xarici açarı (FK) mövcud olan, lakin əlaqəli Dimensiya cədvəlində qarşılığı tapılmayan xətalı sətir."
+  },
+  {
+    "term": "Parquet",
+    "definition": "Böyük həcmli analitik sorğular üçün sütunlu (columnar) saxlanma və yüksək sıxılma (Snappy) təmin edən açıq fayl formatı."
+  },
+  {
+    "term": "Partition Pruning",
+    "definition": "Sorğu mühərrikinin WHERE şərtinə əsasən yalnız aidiyyəti olan partisiya qovluqlarını oxuyub, lazımsız faylları ötürməsi (Data Skipping)."
+  },
+  {
+    "term": "Quarantine Pattern",
+    "definition": "Bütün boru kəmərini dayandırmamaq üçün qüsurlu sətirlərin xüsusi təcrid olunmuş karantin cədvəlinə yönləndirilməsi arxitekturası."
+  },
+  {
+    "term": "SCD Type 2",
+    "definition": "Slowly Changing Dimension Type 2 — dimensiyada dəyişiklik olduqda köhnəni bağlayıb yeni sətir açaraq tam tarixi qoruyan metodologiya."
+  },
+  {
+    "term": "Schema Evolution",
+    "definition": "Mənbədə yeni sütunlar əlavə olunduqda mövcud Lakehouse cədvəlini sındırmadan sxemin avtomatik genişlənməsi imkanı (mergeSchema)."
+  },
+  {
+    "term": "Star Schema",
+    "definition": "Mərkəzdə fakt cədvəli və birbaşa ona qoşulan denormalizasiya olunmuş dimensiyalardan ibarət Ralph Kimball məlumat anbarı modeli."
+  },
+  {
+    "term": "Surrogate Key",
+    "definition": "Heç bir biznes mənası daşımayan, DWH tərəfindən süni şəkildə yaradılmış və SCD Type 2 zamanı unikal sətirləri fərqləndirən ədədi açar."
+  },
+  {
+    "term": "Time Travel",
+    "definition": "Lakehouse cədvəlinin keçmişdəki istənilən versiyasına və ya zaman anına sorğu atmaq və ya həmin vəziyyətə geri qayıtmaq (rollback) qabiliyyəti."
+  },
+  {
+    "term": "XCom",
+    "definition": "Apache Airflow-da tapşırıqlar arasında kiçik metadata və status dəyərlərini Metadata Bazasında saxlayaraq ötürən rabitə mexanizmi."
   }
 ]

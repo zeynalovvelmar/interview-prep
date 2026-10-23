@@ -8,6 +8,8 @@ import { renderGapsPage } from './pages/gaps';
 import { renderScenariosPage } from './pages/scenarios';
 import { renderSqlPracticePage } from './pages/sql-practice';
 import { renderBehavioralPage } from './pages/behavioral';
+import { renderGlossaryPage } from './pages/glossary';
+import { renderMockPage } from './pages/mock';
 import { renderPlaceholderPage } from './pages/placeholder';
 import { Sidebar } from './components/sidebar';
 import { updateBottomNavActive } from './components/bottom-nav';
@@ -78,9 +80,10 @@ export class Router {
       pageElement = await renderBehavioralPage();
 
     } else if (path === '/glossary') {
-      pageElement = renderPlaceholderPage('Terminlər Lüğəti', 'M7', '100+ Data Engineering termini üzrə qısa izahlar.');
+      pageElement = await renderGlossaryPage();
     } else if (path === '/mock') {
-      pageElement = renderPlaceholderPage('Sınaq Müsahibəsi', 'M7', '10 təsadüfi sualdan ibarət interaktiv müsahibə simulyasiyası.');
+      pageElement = await renderMockPage();
+
     } else {
       // 404
       pageElement = document.createElement('div');
