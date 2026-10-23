@@ -2121,3 +2121,59 @@ p code, li code, td code {
   border: 1px solid rgba(37, 99, 235, 0.2);
 }
 
+/* SQL Practice Card & Previews */
+.sql-index-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-left: 0.25rem;
+}
+
+.sql-desc-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0.5rem 0 1rem 0;
+}
+
+.sql-data-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.sql-preview-box {
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  overflow: hidden;
+}
+
+.sql-preview-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+
+.sql-preview-code {
+  margin: 0;
+  padding: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+

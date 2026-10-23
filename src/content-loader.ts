@@ -7,7 +7,8 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-yaml';
 import 'prismjs/components/prism-docker';
 import 'prismjs/components/prism-json';
-import { Topic, Question, GlossaryTerm, HeadingItem, Project } from './types';
+import { Topic, Question, GlossaryTerm, HeadingItem, Project, SqlPracticeItem } from './types';
+
 
 // Simple frontmatter parser
 function parseFrontmatter(raw: string): { data: Record<string, any>; content: string } {
@@ -259,6 +260,26 @@ export class ContentLoader {
     const projects = await this.getProjects();
     return projects.find(p => p.slug === slug || p.id === slug);
   }
+
+  public static async parseMarkdownDocument(raw: string): Promise<{ data: Record<string, any>; html: string; headings: HeadingItem[] }> {
+    const { data, content } = parseFrontmatter(raw);
+    let processed = transformCallouts(content);
+    processed = transformMiniQuizzes(processed);
+    processed = transformDialectTabs(processed);
+    const { headings, modifiedMarkdown } = extractHeadings(processed);
+    const html = await marked.parse(modifiedMarkdown, { async: true });
+    return { data, html, headings };
+  }
+
+  public static async getSqlPractice(): Promise<SqlPracticeItem[]> {
+    const modules = import.meta.glob('/content/sql-practice.json', {
+      eager: true,
+      import: 'default'
+    }) as Record<string, SqlPracticeItem[]>;
+    const items = Object.values(modules)[0];
+    return items || [];
+  }
+
 
 
   public static highlightCode(code: string, language: string): string {

@@ -70,7 +70,21 @@ export interface Project extends ProjectFrontmatter {
   headings: HeadingItem[];
 }
 
+export interface SqlPracticeItem {
+  id: string;
+  title: string;
+  difficulty: Difficulty;
+  category: string;
+  description: string;
+  sampleData: string;
+  expectedOutput: string;
+  solutionTSQL: string;
+  solutionPostgres: string;
+  explanation: string;
+}
+
 export interface SearchItem {
+
   id: string;
   type: 'topic' | 'question' | 'glossary' | 'project';
   title: string;

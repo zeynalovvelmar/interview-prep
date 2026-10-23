@@ -1,0 +1,122 @@
+[
+  {
+    "id": "sql-prac-01",
+    "title": "Kümülatif Sığorta Haqqı Cəmi (Running Total)",
+    "difficulty": "Easy",
+    "category": "Window Functions",
+    "description": "Hər bir müştəri üçün sığorta polislərinin satılma tarixinə görə ardıcıl artan kümülatif (running total) sığorta haqqı məbləğini hesablayın.",
+    "sampleData": "Table: dbo.Policies (PolicyID INT, CustomerID INT, SaleDate DATE, PremiumAmount DECIMAL(10,2))\nNümunə sətirlər:\n(1, 101, '2026-01-10', 300.00)\n(2, 101, '2026-01-15', 500.00)\n(3, 101, '2026-02-01', 200.00)\n(4, 102, '2026-01-12', 400.00)",
+    "expectedOutput": "CustomerID | SaleDate   | PremiumAmount | RunningTotal\n101        | 2026-01-10 | 300.00        | 300.00\n101        | 2026-01-15 | 500.00        | 800.00\n101        | 2026-02-01 | 200.00        | 1000.00\n102        | 2026-01-12 | 400.00        | 400.00",
+    "solutionTSQL": "SELECT \n    CustomerID,\n    SaleDate,\n    PremiumAmount,\n    SUM(PremiumAmount) OVER (\n        PARTITION BY CustomerID \n        ORDER BY SaleDate, PolicyID\n        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n    ) AS RunningTotal\nFROM dbo.Policies\nORDER BY CustomerID, SaleDate;",
+    "solutionPostgres": "SELECT \n    customer_id,\n    sale_date,\n    premium_amount,\n    SUM(premium_amount) OVER (\n        PARTITION BY customer_id \n        ORDER BY sale_date, policy_id\n        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n    ) AS running_total\nFROM core.policies\nORDER BY customer_id, sale_date;",
+    "explanation": "Pəncərə funksiyası olan SUM() OVER (...) istifadə olunur. Mütləq 'ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW' qeyd edilməlidir; əks halda eyni tarixə düşən sətirlərdə RANGE susmaya görə hamısını birlikdə toplayar."
+  },
+  {
+    "id": "sql-prac-02",
+    "title": "Hər Filial Üzrə Ən Çox Satış Edən Top-3 Agent (Top-N per Group)",
+    "difficulty": "Medium",
+    "category": "Window Functions",
+    "description": "Hər bir sığorta filialı üzrə ən yüksək ümumi mükafat toplamış ilk 3 agenti tapın. Əgər agentlərin satış məbləği bərabərdirsə, eyni sıranı paylaşmalıdırlar (heç bir yer buraxılmadan).",
+    "sampleData": "Table: dbo.AgentSales (AgentID INT, BranchID INT, TotalPremium DECIMAL(12,2))",
+    "expectedOutput": "BranchID | AgentID | TotalPremium | RankPosition\n1        | 55      | 95000.00     | 1\n1        | 12      | 82000.00     | 2\n1        | 43      | 71000.00     | 3",
+    "solutionTSQL": "WITH RankedAgents AS (\n    SELECT \n        BranchID,\n        AgentID,\n        TotalPremium,\n        DENSE_RANK() OVER (\n            PARTITION BY BranchID \n            ORDER BY TotalPremium DESC\n        ) AS RankPos\n    FROM dbo.AgentSales\n)\nSELECT BranchID, AgentID, TotalPremium, RankPos\nFROM RankedAgents\nWHERE RankPos <= 3\nORDER BY BranchID, RankPos;",
+    "solutionPostgres": "WITH ranked_agents AS (\n    SELECT \n        branch_id,\n        agent_id,\n        total_premium,\n        DENSE_RANK() OVER (\n            PARTITION BY branch_id \n            ORDER BY total_premium DESC\n        ) AS rank_pos\n    FROM core.agent_sales\n)\nSELECT branch_id, agent_id, total_premium, rank_pos\nFROM ranked_agents\nWHERE rank_pos <= 3\nORDER BY branch_id, rank_pos;",
+    "explanation": "Bərabər ballı agentlərdə sıra nömrəsi atlamasın deyə ROW_NUMBER deyil, DENSE_RANK() istifadə olunur. WHERE klauzulasi birbaşa pəncərə funksiyasını süzə bilmədiyi üçün CTE (WITH) vacibdir."
+  },
+  {
+    "id": "sql-prac-03",
+    "title": "Təkrarlanan Sətirlərin Təmizlənməsi (Deduplication)",
+    "difficulty": "Medium",
+    "category": "Data Cleaning",
+    "description": "Eyni müqavilə nömrəsinə (PolicyNumber) malik təkrarlanan sətirlərdən ən son yenilənmiş (UpdatedAt) sətri saxlayaraq köhnə dublikatları silin.",
+    "sampleData": "Table: dbo.StagingPolicies (ID INT, PolicyNumber VARCHAR(50), UpdatedAt DATETIME)",
+    "expectedOutput": "Cədvəldən köhnə dublikatlar fiziki silinir, hər nömrə üçün tək 1 ən son sətir qalır.",
+    "solutionTSQL": "-- T-SQL CTE vasitəsilə birbaşa DELETE dəstəkləyir:\nWITH CTE_Duplicates AS (\n    SELECT \n        ID,\n        PolicyNumber,\n        UpdatedAt,\n        ROW_NUMBER() OVER (\n            PARTITION BY PolicyNumber \n            ORDER BY UpdatedAt DESC, ID DESC\n        ) AS RowNum\n    FROM dbo.StagingPolicies\n)\nDELETE FROM CTE_Duplicates\nWHERE RowNum > 1;",
+    "solutionPostgres": "-- PostgreSQL-də CTE DELETE üçün USING və ya subquery tətbiq edilir:\nDELETE FROM staging.staging_policies\nWHERE id IN (\n    SELECT id FROM (\n        SELECT \n            id,\n            ROW_NUMBER() OVER (\n                PARTITION BY policy_number \n                ORDER BY updated_at DESC, id DESC\n            ) AS rn\n        FROM staging.staging_policies\n    ) t\n    WHERE t.rn > 1\n);",
+    "explanation": "ROW_NUMBER() hər bir qrupda sətirləri ardıcıl nömrələyir. Ən son sətir 1 nömrəsini alır, 1-dən böyük olanlar isə dublikat sayılaraq silinir."
+  },
+  {
+    "id": "sql-prac-04",
+    "title": "Ardıcıl Fəaliyyət Günlərinin Tapılması (Gaps & Islands)",
+    "difficulty": "Hard",
+    "category": "Advanced Analytics",
+    "description": "Müştərinin ardıcıl günlərdə sistemə daxil olduğu fasiləsiz aktivlik dövrlərini (Start Date və End Date olaraq) tapın.",
+    "sampleData": "Table: dbo.UserLogins (UserID INT, LoginDate DATE)\nNümunə: User 1 üçün '2026-03-01', '2026-03-02', '2026-03-03' (1-ci ada), '2026-03-07', '2026-03-08' (2-ci ada).",
+    "expectedOutput": "UserID | IslandStart | IslandEnd  | ConsecutiveDays\n1      | 2026-03-01  | 2026-03-03 | 3\n1      | 2026-03-07  | 2026-03-08 | 2",
+    "solutionTSQL": "WITH NumberedLogins AS (\n    SELECT \n        UserID,\n        LoginDate,\n        ROW_NUMBER() OVER (PARTITION BY UserID ORDER BY LoginDate) AS rn\n    FROM dbo.UserLogins\n),\nGroupedIslands AS (\n    SELECT \n        UserID,\n        LoginDate,\n        DATEADD(day, -rn, LoginDate) AS IslandGroup\n    FROM NumberedLogins\n)\nSELECT \n    UserID,\n    MIN(LoginDate) AS IslandStart,\n    MAX(LoginDate) AS IslandEnd,\n    COUNT(*) AS ConsecutiveDays\nFROM GroupedIslands\nGROUP BY UserID, IslandGroup\nORDER BY UserID, IslandStart;",
+    "solutionPostgres": "WITH numbered_logins AS (\n    SELECT \n        user_id,\n        login_date,\n        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY login_date) AS rn\n    FROM core.user_logins\n),\ngrouped_islands AS (\n    SELECT \n        user_id,\n        login_date,\n        login_date - (rn * INTERVAL '1 day') AS island_group\n    FROM numbered_logins\n)\nSELECT \n    user_id,\n    MIN(login_date) AS island_start,\n    MAX(login_date) AS island_end,\n    COUNT(*) AS consecutive_days\nFROM grouped_islands\nGROUP BY user_id, island_group\nORDER BY user_id, island_start;",
+    "explanation": "Klassik Gaps & Islands alqoritmi: Ardıcıl tarixlərdən ardıcıl sətir nömrəsini çıxdıqda (Date - RowNumber), fasiləsiz günlər üçün həmişə eyni sabit baza tarixi alınır. Bu sabit tarixə görə GROUP BY edilir."
+  },
+  {
+    "id": "sql-prac-05",
+    "title": "Məlumatların Yenilənməsi və ya Əlavəsi (SCD Type 1 Upsert)",
+    "difficulty": "Medium",
+    "category": "Data Modification",
+    "description": "Əgər müştəri cədvəldə mövcuddursa telefon və ünvanını yeniləyin, yoxdursa yeni sətir kimi əlavə edin (Upsert əməliyyatı).",
+    "sampleData": "Source: @stg_customer (CustomerID INT, Phone VARCHAR(20), City VARCHAR(50))\nTarget: dbo.DimCustomer",
+    "expectedOutput": "Toqquşma olduqda UPDATE, olmadıqda INSERT icra olunur.",
+    "solutionTSQL": "-- T-SQL MERGE sintaksisi:\nMERGE dbo.DimCustomer AS tgt\nUSING @stg_customer AS src\nON (tgt.CustomerID = src.CustomerID)\nWHEN MATCHED THEN \n    UPDATE SET tgt.Phone = src.Phone, tgt.City = src.City, tgt.UpdatedAt = SYSDATETIME()\nWHEN NOT MATCHED THEN \n    INSERT (CustomerID, Phone, City, UpdatedAt) \n    VALUES (src.CustomerID, src.Phone, src.City, SYSDATETIME());",
+    "solutionPostgres": "-- PostgreSQL ON CONFLICT DO UPDATE sintaksisi:\nINSERT INTO core.dim_customer (customer_id, phone, city, updated_at)\nVALUES (101, '+994501234567', 'Bakı', CURRENT_TIMESTAMP)\nON CONFLICT (customer_id) \nDO UPDATE SET \n    phone = EXCLUDED.phone,\n    city = EXCLUDED.city,\n    updated_at = EXCLUDED.updated_at;",
+    "explanation": "SQL Server 'MERGE' açar sözündən, PostgreSQL isə 'INSERT ... ON CONFLICT (key) DO UPDATE' (Upsert) standartından istifadə edir."
+  },
+  {
+    "id": "sql-prac-06",
+    "title": "Məhsullar və İllər Üzrə Çarpaz Hesabat (Pivot / Conditional Aggregation)",
+    "difficulty": "Medium",
+    "category": "Aggregations",
+    "description": "Hər bir sığorta növü üzrə 2024, 2025 və 2026-cı illərdə toplanmış ümumi mükafatı sütunlar şəklində (Matrix/Pivot) göstərin.",
+    "sampleData": "Table: dbo.Policies (ProductType VARCHAR(30), PolicyYear INT, PremiumAmount DECIMAL(12,2))",
+    "expectedOutput": "ProductType | Y2024   | Y2025   | Y2026\nKASKO       | 150000  | 185000  | 210000\nİcbari      | 90000   | 95000   | 105000",
+    "solutionTSQL": "-- Şərti aqreqasiya (Hər iki bazada 100% ANSI standart):\nSELECT \n    ProductType,\n    SUM(CASE WHEN PolicyYear = 2024 THEN PremiumAmount ELSE 0 END) AS Y2024,\n    SUM(CASE WHEN PolicyYear = 2025 THEN PremiumAmount ELSE 0 END) AS Y2025,\n    SUM(CASE WHEN PolicyYear = 2026 THEN PremiumAmount ELSE 0 END) AS Y2026\nFROM dbo.Policies\nGROUP BY ProductType;",
+    "solutionPostgres": "-- PostgreSQL tərəfində də CASE WHEN ən etibarlı və portativ həlldir:\nSELECT \n    product_type,\n    SUM(CASE WHEN policy_year = 2024 THEN premium_amount ELSE 0 END) AS y2024,\n    SUM(CASE WHEN policy_year = 2025 THEN premium_amount ELSE 0 END) AS y2025,\n    SUM(CASE WHEN policy_year = 2026 THEN premium_amount ELSE 0 END) AS y2026\nFROM core.policies\nGROUP BY product_type;",
+    "explanation": "Xüsusi PIVOT operatoru əvəzinə SUM(CASE WHEN ...) istifadə etmək həm T-SQL, həm də PostgreSQL-də eyni cür işləyir və miqrasiyaya tam davamlıdır."
+  },
+  {
+    "id": "sql-prac-07",
+    "title": "Təşkilati İyerarxiyanın Açılması (Recursive CTE)",
+    "difficulty": "Hard",
+    "category": "Advanced SQL",
+    "description": "Baş Menecerdən başlayaraq hər bir sığorta agentinin rəhbərlik səviyyəsini (Level: 1, 2, 3...) və tabeçilik yolunu (HierarchyPath) çıxarın.",
+    "sampleData": "Table: dbo.Employees (EmployeeID INT, FullName VARCHAR(100), ManagerID INT NULL)",
+    "expectedOutput": "EmployeeID | FullName       | Level | HierarchyPath\n1          | Rəşad (Direktor)| 1     | Rəşad\n4          | Elmar (Mühəndis)| 2     | Rəşad -> Elmar",
+    "solutionTSQL": "WITH EmpHierarchy AS (\n    -- Anchor Member (Ən üst rəhbər: ManagerID IS NULL)\n    SELECT \n        EmployeeID, \n        FullName, \n        ManagerID, \n        1 AS Lvl,\n        CAST(FullName AS VARCHAR(MAX)) AS HierarchyPath\n    FROM dbo.Employees\n    WHERE ManagerID IS NULL\n    \n    UNION ALL\n    \n    -- Recursive Member\n    SELECT \n        e.EmployeeID, \n        e.FullName, \n        e.ManagerID, \n        h.Lvl + 1,\n        CAST(h.HierarchyPath + ' -> ' + e.FullName AS VARCHAR(MAX))\n    FROM dbo.Employees e\n    JOIN EmpHierarchy h ON e.ManagerID = h.EmployeeID\n)\nSELECT * FROM EmpHierarchy ORDER BY Lvl, EmployeeID;",
+    "solutionPostgres": "WITH RECURSIVE emp_hierarchy AS (\n    -- Anchor Member\n    SELECT \n        employee_id, \n        full_name, \n        manager_id, \n        1 AS lvl,\n        full_name::TEXT AS hierarchy_path\n    FROM core.employees\n    WHERE manager_id IS NULL\n    \n    UNION ALL\n    \n    -- Recursive Member\n    SELECT \n        e.employee_id, \n        e.full_name, \n        e.manager_id, \n        h.lvl + 1,\n        h.hierarchy_path || ' -> ' || e.full_name\n    FROM core.employees e\n    JOIN emp_hierarchy h ON e.manager_id = h.employee_id\n)\nSELECT * FROM emp_hierarchy ORDER BY lvl, employee_id;",
+    "explanation": "PostgreSQL-də rekursiv sorğu üçün 'WITH RECURSIVE' yazılmalıdır (T-SQL-də sadəcə 'WITH' bəs edir). Anchor hissə kökü tapır, UNION ALL isə ağac boyu aşağı enir."
+  },
+  {
+    "id": "sql-prac-08",
+    "title": "Məlumatların 15 Dəqiqəlik Zaman Pəncərələrinə Yığılması (Date Bucketing)",
+    "difficulty": "Medium",
+    "category": "Date & Time",
+    "description": "Zəng mərkəzinə daxil olan müraciətlərin sayını hər 15 dəqiqəlik sabit intervallara görə qruplaşdırıb sayını hesablayın.",
+    "sampleData": "Table: dbo.CallLogs (CallID INT, CallTimestamp DATETIME)",
+    "expectedOutput": "IntervalStart       | TotalCalls\n2026-03-24 10:00:00 | 45\n2026-03-24 10:15:00 | 62\n2026-03-24 10:30:00 | 38",
+    "solutionTSQL": "-- T-SQL DATEADD / DATEDIFF riyaziyyatı ilə bucketing:\nSELECT \n    DATEADD(minute, (DATEDIFF(minute, 0, CallTimestamp) / 15) * 15, 0) AS IntervalStart,\n    COUNT(*) AS TotalCalls\nFROM dbo.CallLogs\nGROUP BY DATEADD(minute, (DATEDIFF(minute, 0, CallTimestamp) / 15) * 15, 0)\nORDER BY IntervalStart;",
+    "solutionPostgres": "-- PostgreSQL date_bin funksiyası ilə anında bucketing (v14+):\nSELECT \n    date_bin('15 minutes', call_timestamp, TIMESTAMPTZ '2026-01-01 00:00:00') AS interval_start,\n    COUNT(*) AS total_calls\nFROM core.call_logs\nGROUP BY interval_start\nORDER BY interval_start;",
+    "explanation": "T-SQL baza tarixindən (0) dəqiqələri hesablayıb 15-ə tam bölür. PostgreSQL isə çox rahat daxili 'date_bin(interval, timestamp, origin)' funksiyasına malikdir."
+  },
+  {
+    "id": "sql-prac-09",
+    "title": "Heç Bir Hadisə Törətməmiş Müştərilər (Anti-Join)",
+    "difficulty": "Easy",
+    "category": "Joins",
+    "description": "Heç vaxt sığorta iddiası (Claim) qaldırmamış aktiv müştəriləri tapın (iki fərqli optimal üsulla).",
+    "sampleData": "Tables: dbo.Customers (CustomerID, FullName), dbo.Claims (ClaimID, CustomerID, ClaimAmount)",
+    "expectedOutput": "CustomerID | FullName\n103        | Kamil Əliyev\n108        | Leyla Məmmədova",
+    "solutionTSQL": "-- 1-ci Üsul: NOT EXISTS (Böyük cədvəllərdə ən optimal):\nSELECT c.CustomerID, c.FullName\nFROM dbo.Customers c\nWHERE NOT EXISTS (\n    SELECT 1 FROM dbo.Claims cl WHERE cl.CustomerID = c.CustomerID\n);\n\n-- 2-ci Üsul: LEFT JOIN + IS NULL\n-- SELECT c.CustomerID, c.FullName FROM dbo.Customers c\n-- LEFT JOIN dbo.Claims cl ON c.CustomerID = cl.CustomerID\n-- WHERE cl.ClaimID IS NULL;",
+    "solutionPostgres": "-- PostgreSQL-də də eyni standart:\nSELECT c.customer_id, c.full_name\nFROM core.customers c\nWHERE NOT EXISTS (\n    SELECT 1 FROM core.claims cl WHERE cl.customer_id = c.customer_id\n);",
+    "explanation": "'NOT EXISTS' subquery daxilində ilk uyğunluğu tapan kimi yoxlamanı dayandırır (Short-circuit). 'NOT IN' isə alt sorğuda bircə dənə NULL olarsa heç nə qaytarmır, ona görə tövsiyə edilmir."
+  },
+  {
+    "id": "sql-prac-10",
+    "title": "Aylıq Satışın Artım Faizinin Hesablanması (Month-over-Month Growth)",
+    "difficulty": "Medium",
+    "category": "Window Functions",
+    "description": "Hər ayın ümumi sığorta satışını və əvvəlki aya nisbətən faizlə artım və ya azalmasını (MoM Growth %) hesablayın.",
+    "sampleData": "Table: dbo.MonthlySales (SalesMonth DATE, Revenue DECIMAL(14,2))",
+    "expectedOutput": "SalesMonth | Revenue   | PrevMonthRev | GrowthPercent\n2026-01-01 | 100000.00 | NULL         | NULL\n2026-02-01 | 120000.00 | 100000.00    | 20.00 %\n2026-03-01 | 114000.00 | 120000.00    | -5.00 %",
+    "solutionTSQL": "SELECT \n    SalesMonth,\n    Revenue,\n    LAG(Revenue, 1) OVER (ORDER BY SalesMonth) AS PrevMonthRev,\n    ROUND(\n        ((Revenue - LAG(Revenue, 1) OVER (ORDER BY SalesMonth)) * 100.0) / \n        NULLIF(LAG(Revenue, 1) OVER (ORDER BY SalesMonth), 0),\n        2\n    ) AS GrowthPercent\nFROM dbo.MonthlySales\nORDER BY SalesMonth;",
+    "solutionPostgres": "SELECT \n    sales_month,\n    revenue,\n    LAG(revenue, 1) OVER (ORDER BY sales_month) AS prev_month_rev,\n    ROUND(\n        ((revenue - LAG(revenue, 1) OVER (ORDER BY sales_month)) * 100.0) / \n        NULLIF(LAG(revenue, 1) OVER (ORDER BY sales_month), 0),\n        2\n    ) AS growth_percent\nFROM core.monthly_sales\nORDER BY sales_month;",
+    "explanation": "LAG() funksiyası əvvəlki sətrin dəyərini gətirir. Sıfıra bölünmə (Divide by Zero) xətasının qarşısını almaq üçün məxrəcdə mütləq NULLIF(val, 0) yazılmalıdır."
+  }
+]

@@ -4,6 +4,10 @@ import { renderTopicDetailPage } from './pages/topic-detail';
 import { renderQABankPage } from './pages/qa-bank';
 import { renderProjectsListPage } from './pages/projects-list';
 import { renderProjectDetailPage } from './pages/project-detail';
+import { renderGapsPage } from './pages/gaps';
+import { renderScenariosPage } from './pages/scenarios';
+import { renderSqlPracticePage } from './pages/sql-practice';
+import { renderBehavioralPage } from './pages/behavioral';
 import { renderPlaceholderPage } from './pages/placeholder';
 import { Sidebar } from './components/sidebar';
 import { updateBottomNavActive } from './components/bottom-nav';
@@ -63,15 +67,16 @@ export class Router {
       const slug = path.replace('/projects/', '');
       pageElement = await renderProjectDetailPage(slug);
     } else if (path === '/gaps') {
-      pageElement = renderPlaceholderPage('Boşluqlar & Strategiya', 'M6', 'Təcrübədə olmayan sahələr üzrə dürüst və güclü cavab strategiyaları.');
+      pageElement = await renderGapsPage();
     } else if (path === '/scenarios') {
-      pageElement = renderPlaceholderPage('Real Ssenarilər', 'M6', '10+ real memarlıq və istehsalat ssenarisi üzrə addım-addım həllər.');
+      pageElement = await renderScenariosPage();
     } else if (path === '/sql-practice') {
-      pageElement = renderPlaceholderPage('SQL Məşq', 'M6', 'T-SQL və PostgreSQL üçün 20+ praktik SQL tapşırığı.');
+      pageElement = await renderSqlPracticePage();
     } else if (path === '/cheatsheets') {
       pageElement = renderPlaceholderPage('Konspektlər', 'M7', 'Çap üçün hazır sintaksis və müqayisə cədvəlləri.');
     } else if (path === '/behavioral') {
-      pageElement = renderPlaceholderPage('Davranış & STAR', 'M6', 'Özünü təqdimat, STAR hekayələri və müsahibəçiyə veriləcək suallar.');
+      pageElement = await renderBehavioralPage();
+
     } else if (path === '/glossary') {
       pageElement = renderPlaceholderPage('Terminlər Lüğəti', 'M7', '100+ Data Engineering termini üzrə qısa izahlar.');
     } else if (path === '/mock') {
