@@ -15,11 +15,19 @@ summary: "Tiplərin və T-SQL əmrlərinin çevrilmə cədvəlləri, çətin oby
 
 ## 1. Qısa izah (Sadə dildə və analogiya ilə)
 
-Bir sığorta şirkətinin verilənlər bazasını Microsoft SQL Server-dən PostgreSQL-ə köçürmək **uçuş zamanı təyyarənin mühərrikini dəyişməyə** bənzəyir:
-- Müştərilər 24/7 saytdan və mobil tətbiqdən icbari/kasko sığorta alır, qəza zamanı dərhal iddia (claim) qaldırır. Sistemi 2 gün tam söndürmək (**Big-Bang**) sığorta biznesi üçün qəbuledilməz maliyyə və etibar itkisidir.
-- **Sxem və Tiplər**: Əgər vintlər fərqli standartdadırsa (T-SQL-də `NVARCHAR`, `DATETIME2`, `BIT`, `IDENTITY`), yeni mühərrikə birbaşa taxıla bilməz; əvvəlcədən dəqiq adapter cədvəli (**Data Type Mapping**) qurulmalıdır.
-- **Kəsilməsiz Keçid (CDC Near-Zero Downtime)**: Təyyarə köhnə mühərriklə uçarkən, arxa planda yeni mühərrikə eyni yanacaq axını (Change Data Capture - CDC loqları) verilir. İki mühərrik eyni dövrədə işlədiyi an, cəmi 5 dəqiqəlik texniki fasilə ilə idarəetmə sükanı yeni mühərrikə (**Cutover**) verilir.
-- **Rollback (Geri Qayıdış Planı)**: Əgər yeni mühərrikdə ilk saatda gözlənilməz vibrasiya (gizli xəta) yaranarsa, qəza etməmək üçün əvvəlcədən tərs axın (**Reverse Replication**) qurulur və dərhal köhnə sistemə qayıdılır.
+Bir sığorta şirkətinin verilənlər bazasını Microsoft SQL Server-dən PostgreSQL-ə köçürmək **uçuş zamanı sərnişin təyyarəsinin mühərrikini dəyişməyə** bənzəyir:
+
+### Biznesin Fasiləsizliyi
+Müştərilər 24/7 saytdan və mobil tətbiqdən icbari və KASKO sığorta polisləri alır, yol qəzası baş verdikdə dərhal kompensasiya iddiası (claim) qaldırırlar. Sistemi 2 gün tam söndürmək (**Big-Bang**) sığorta biznesi üçün qəbuledilməz maliyyə və etibar itkisidir.
+
+### Sxem və Məlumat Tipləri: Standart Adapterlər
+Əgər boltlar və vintlər fərqli standartdadırsa (T-SQL-də `NVARCHAR`, `DATETIME2`, `BIT`, `IDENTITY`), yeni mühərrikə birbaşa bağlana bilməz. Əvvəlcədən dəqiq adapter cədvəli (**Data Type Mapping**) qurulmalıdır.
+
+### Kəsilməsiz Keçid (CDC Near-Zero Downtime)
+Təyyarə köhnə mühərriklə uçarkən, arxa planda yeni mühərrikə eyni yanacaq axını (Change Data Capture - CDC loqları) yönləndirilir. Hər iki mühərrik eyni dövrəyə çatdığı an, cəmi 5 dəqiqəlik qısa texniki fasilə ilə idarəetmə sükanı yeni mühərrikə (**Cutover**) verilir.
+
+### Rollback (Geri Qayıdış Zəmanəti)
+Əgər yeni mühərrikdə ilk saatlarda gözlənilməz texniki qüsur yaranarsa, sistemi təhlükəyə atmamaq üçün əvvəlcədən tərs replikasiya (**Reverse Replication**) qurulur və tək bir düymə ilə köhnə bazaya qayıdılır.
 
 > [!TIP]
 > **Müsahibədə belə de:**
@@ -70,9 +78,9 @@ Aşağıdakı diaqram Atəşgah Sığorta üçün nəzərdə tutulmuş kəsilmə
 | `DATETIME2` / `DATETIME` | `TIMESTAMPTZ` | Sığorta polislərində saat qurşağı dəqiqliyi üçün hər zaman `TIMESTAMPTZ` (UTC) tövsiyə olunur. |
 | `BIT` | `BOOLEAN` | SQL Server-də 0/1 idi, PostgreSQL-də doğma `TRUE`/`FALSE`. Tətbiq sorğularında `WHERE is_active = 1` yerinə `WHERE is_active = TRUE` yazılmalıdır. |
 | `UNIQUEIDENTIFIER` | `UUID` | PostgreSQL-də `uuid-ossp` və ya daxili `gen_random_uuid()` funksiyası ilə işləyir. |
-| `MONEY` / `SMALLMONEY` | `NUMERIC(19,4)` | `MONEY` tipi valyuta simvolu və yuvarlaqlaşdırma problemləri yarada bilər; maliyyə hesablamalarında mütləq `NUMERIC` istifadə olunur. |
-| `IDENTITY(1,1)` | `GENERATED ALWAYS AS IDENTITY` | Köhnə `SERIAL` əvəzinə SQL standartı olan `IDENTITY` tövsiyə olunur; ardıcıllıq (sequence) avtomatik idarə olunur. |
-| `TINYINT` | `SMALLINT` | PostgreSQL-də 1 baytlıq unsigned ədəd yoxdur, ən kiçik tam ədəd 2 baytlıq `SMALLINT`-dir. |
+| `MONEY` / `SMALLMONEY` | `NUMERIC(19,4)` | `MONEY` tipi valyuta simvolu və yuvarlaqlaşdırma xətaları yarada bilər; maliyyə hesablamalarında mütləq `NUMERIC` istifadə olunur. |
+| `IDENTITY(1,1)` | `GENERATED ALWAYS AS IDENTITY` | Köhnə `SERIAL` əvəzinə müasir SQL standartı olan `IDENTITY` tövsiyə olunur; ardıcıllıq (sequence) avtomatik idarə olunur. |
+| `TINYINT` | `SMALLINT` | PostgreSQL-də 1 baytlıq işarəsiz ədəd yoxdur, ən kiçik tam ədəd 2 baytlıq `SMALLINT`-dir. |
 | `VARBINARY(MAX)` / `IMAGE`| `BYTEA` | Şəkillər və sənəd skanları ikili (binary) `BYTEA` formatında saxlanılır. |
 | `ROWVERSION` / `TIMESTAMP`| `BIGINT` və ya Sequence | SQL Server-də avtomatik artan 8-baytlıq ikili versiya idi; PostgreSQL-də trigger ilə yenilənən `BIGINT` və ya `xmin` ilə əvəzlənir. |
 
@@ -82,78 +90,70 @@ Aşağıdakı diaqram Atəşgah Sığorta üçün nəzərdə tutulmuş kəsilmə
 
 | Əməliyyat | Microsoft SQL Server (T-SQL) | PostgreSQL (PL/pgSQL) |
 | :--- | :--- | :--- |
-| **Sətir məhdudiyyəti** | `SELECT TOP (10) * FROM ...` | `SELECT * FROM ... LIMIT 10;` |
+| **Sətir Məhdudiyyəti** | `SELECT TOP (10) * FROM ...` | `SELECT * FROM ... LIMIT 10;` |
 | **Səhifələmə (Pagination)** | `OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY` | `OFFSET 20 LIMIT 10;` |
-| **NULL əvəzləməsi** | `ISNULL(col, default_val)` | `COALESCE(col, default_val)` |
-| **Sətir birləşdirmə** | `col1 + ' ' + col2` | `col1 \|\| ' ' \|\| col2` və ya `CONCAT(col1, ' ', col2)` |
+| **NULL Əvəzləməsi** | `ISNULL(col, default_val)` | `COALESCE(col, default_val)` |
+| **Sətir Birləşdirmə** | `col1 + ' ' + col2` | `col1 \|\| ' ' \|\| col2` və ya `CONCAT(col1, ' ', col2)` |
 | **Cari Tarix/Vaxt** | `GETDATE()` və ya `SYSUTCDATETIME()` | `CURRENT_TIMESTAMP` və ya `CLOCK_TIMESTAMP()` |
-| **Tarix əlavə etmək** | `DATEADD(day, 30, IssueDate)` | `issue_date + INTERVAL '30 days'` |
-| **Tarix fərqi** | `DATEDIFF(day, StartDate, EndDate)` | `(end_date - start_date)` və ya `DATE_PART('day', age)` |
+| **Tarix Əlavə Etmək** | `DATEADD(day, 30, IssueDate)` | `issue_date + INTERVAL '30 days'` |
+| **Tarix Fərqi** | `DATEDIFF(day, StartDate, EndDate)` | `(end_date - start_date)` və ya `DATE_PART('day', age)` |
 | **Tranzaksiya Xətası** | `BEGIN TRY...BEGIN CATCH` | `BEGIN ... EXCEPTION WHEN OTHERS THEN` |
-| **Upsert / Birləşdirmə** | `MERGE INTO Target USING Source ...` | `INSERT INTO ... ON CONFLICT (...) DO UPDATE` (PG 15+ `MERGE`) |
+| **Upsert / Birləşdirmə** | `MERGE INTO Target USING Source ...` | `INSERT INTO ... ON CONFLICT (...) DO UPDATE` |
 | **Dəyişən Sətirləri Alma**| `OUTPUT inserted.PolicyID, deleted.Status` | `RETURNING policy_id, status;` |
 | **İdentifikator Dırnaqları** | `[PolicyID]`, `[Customer Name]` | `"policy_id"`, `"customer_name"` |
-| **Hərf həssaslığı** | Adətən `Case-Insensitive` (CI) | Standart olaraq `Case-Sensitive`; kiçik hərflərə çevirir |
+| **Hərf Həssaslığı** | Adətən `Case-Insensitive` (CI) | Standart olaraq `Case-Sensitive`; dırnaqsız kiçik hərflərə çevrilir |
 
 ---
 
-### 2.4. Miqrasiyanın Ən Çətin Elementləri ("Çətin Yerlər")
+### 2.4. Miqrasiyanın Ən Çətin Obyektləri və Həll Yolları
 
-1. **Dinamik SQL (`sp_executesql`)**:
-   - T-SQL-də string birləşdirilərək `sp_executesql` ilə parametrlə çağırılır.
-   - PL/pgSQL-də `EXECUTE format('SELECT * FROM %I WHERE id = $1', table_name) USING p_id;` sintaksisinə çevrilməlidir (`%I` identifikator inyeksiyasının qarşısını alır).
-2. **SQL CLR (.NET C# Assambleyaları)**:
-   - SQL Server daxilində C# dll-ləri ilə mürəkkəb riyazi və ya kriptoqrafik hesablamalar.
-   - PostgreSQL-də birbaşa .NET işləmir. Həll: Məntiqi ya `PL/Python` / `PL/Perl` ilə yenidən yazmaq, ya da bazadan kənara çıxararaq xarici mikroservisə vermək.
-3. **Linked Servers**:
-   - SQL Server-in uzaq bazalara qoşulması.
-   - PostgreSQL-də `postgres_fdw` (Foreign Data Wrapper) və ya `dblink` uzantısı qurulmalıdır.
-4. **SQL Server Agent Jobs**:
-   - SQL Agent-dəki pilləli (steps) qrafikləri PostgreSQL-də təbii olaraq yoxdur.
-   - Həll: Sadə SQL tapşırıqları üçün `pg_cron`, mürəkkəb ETL işləri üçün isə **Apache Airflow DAG-ları**.
-5. **SSIS Paketləri (dtsx)**:
-   - Vizual SSIS ETL axınları avtomatik çevrilə bilməz.
-   - Həll: Python (`pandas`, `SQLAlchemy`) və ya PySpark skriptlərinə keçirilməli, Airflow ilə orkestrasiya olunmalıdır.
+| Mürəkkəb Obyekt | SQL Server Təyinatı | PostgreSQL-də Əvəzləmə Yolu |
+| :--- | :--- | :--- |
+| **Dinamik SQL** | `sp_executesql` ilə sətirləri birləşdirmək | PL/pgSQL daxilində `EXECUTE format('SELECT * FROM %I WHERE id = $1', table_name) USING p_id;` |
+| **SQL CLR (.NET C#)** | Baza daxilində C# kitabxanaları | `PL/Python`, `PL/Perl` və ya məntiqi bazadan çıxararaq xarici mikroservisə ötürmək |
+| **Linked Servers** | Uzaq bazalara dörd hissəli adla müraciət | `postgres_fdw` (Foreign Data Wrapper) və ya `dblink` uzantısı |
+| **SQL Server Agent Jobs** | Qrafik üzrə işləyən daxili tapşırıqlar | Sadə tapşırıqlar üçün `pg_cron`, mürəkkəb ETL boruları üçün **Apache Airflow DAG-ları** |
+| **SSIS Paketləri (`.dtsx`)** | Vizual ETL kətanları | Python (`pandas`, `SQLAlchemy`) və ya PySpark skriptlərinə keçirilməli və Airflow ilə idarə olunmalıdır |
 
 ---
 
-### 2.5. Miqrasiya Strategiyaları Müqayisəsi
+### 2.5. Miqrasiya Strategiyalarının Müqayisəsi
 
-1. **Big-Bang Miqrasiyası**:
-   - Şənbə gecəsi köhnə baza söndürülür, bütün data kütləvi köçürülür, bazar səhəri yeni baza açılır.
-   - *Üstünlük*: Sadə arxitektura, replikasiya konfiqurasiyası tələb etmir.
-   - *Mənfi cəhət*: 100 GB-dan böyük bazalarda kəsilmə (downtime) saatlarla çəkir; hər hansı xətada geri qayıtmaq bütün yeni əməliyyatların itməsi deməkdir.
-2. **CDC Near-Zero Downtime (Tövsiyə olunan)**:
-   - Köhnə baza canlı işləyərkən fonda kütləvi data köçürülür və sonrakı hər bir dəyişiklik Debezium (Kafka) və ya AWS DMS ilə hədəf PostgreSQL-ə axıdılır.
-   - *Kəsilmə müddəti*: Cəmi **5–15 dəqiqə** (yalnız tətbiqin connection string-ini dəyişmək və son bir neçə tranzaksiyanı tamamlamaq üçün).
-   - *Risksiz*: Yeni baza paralel işləyir və istənilən an yoxlanıla bilir.
+| Strategiya | Kəsilmə Müddəti (Downtime) | Texniki Mürəkkəblik | Risk Səviyyəsi | Uyğun Ssenari |
+| :--- | :--- | :--- | :--- | :--- |
+| **Big-Bang Miqrasiyası** | 6–24 saat (Uzun kəsilmə) | Aşağı (Replikasiya yoxdur) | **Yüksək** (Xəta baş verdikdə geri qayıdış itki yaradır) | Qeyri-kritik sistemlər və ya kiçik bazalar (< 50 GB) |
+| **CDC Near-Zero Downtime** | 5–15 dəqiqə (Yalnız Cutover) | Orta / Yüksək (Kafka, Debezium) | **Minimal** (Köhnə və yeni baza paralel işləyir) | 24/7 sığorta, bank və kritik istehsalat mühitləri |
 
 ---
 
 ### 2.6. Məlumat Bütövlüyünün Yoxlanması (Data Validation Framework)
-Miqrasiyanın uğurlu sayılması üçün 4 səviyyəli yoxlama aparılır:
-1. **Sətir Saylarının Müqayisəsi (Row Counts)**: Bütün cədvəllər üzrə $N_{\text{MSSQL}} == N_{\text{PG}}$.
-2. **Maliyyə və Say Aqreqatları (Sum / Min / Max)**: Sığorta haqlarının ümumi cəmi (`SUM(premium)`), iddia məbləğləri qəpiyinə qədər tutuşdurulur.
-3. **Kriptoqrafik Heş Müqayisəsi (Hash / Checksum)**: Cədvəlin bütün sətirləri ID ardıcıllığı ilə `MD5` və ya `SHA256` heşinə yığılır və iki baza arasında müqayisə edilir.
-4. **Referential Integrity (Xarici Açar Yoxlaması)**: Heç bir cədvəldə "yetim sətir" (Orphan record - valideyni olmayan uşaq cədvəl sətri) qalmadığı yoxlanılır.
+
+Miqrasiya prosesinin rəsmi təsdiqi üçün 4 səviyyəli yoxlama aparılır:
+
+| Səviyyə | Yoxlama Növü | Yoxlama Qaydası | Qəbul Meyarı (Criteria) |
+| :--- | :--- | :--- | :--- |
+| **1-ci Səviyyə** | **Sətir Sayları (Row Counts)** | Bütün cədvəllər üzrə toplam sətir sayı müqayisə edilir | $N_{\text{MSSQL}} == N_{\text{PostgreSQL}}$ |
+| **2-ci Səviyyə** | **Maliyyə Aqreqatları (Sums)** | Sığorta haqları (`SUM(premium)`), iddia ödənişləri tutuşdurulur | 0.00 qəpik fərq |
+| **3-cü Səviyyə** | **Kriptoqrafik Heş (MD5 Checksum)** | Bütün sətirlər sütunlar üzrə birləşdirilib heşlənir | Heş kodları 100% bərabər olmalıdır |
+| **4-cü Səviyyə** | **Əlaqə Bütövlüyü (FK Integrity)** | Uşaq cədvəllərdə valideyni olmayan sətirlər axtarılır | 0 ədəd "yetim sətir" (Orphan row) |
 
 ---
 
 ### 2.7. Addım-Addım Cutover Planı və Rollback Strategiyası
 
-#### Cutover Qrafiki:
-- **T - 24 saat**: Hədəf PostgreSQL bazasında son DDL indeksləri və icazələri yoxlanılır; CDC gecikməsi (Lag) monitorinq edilir (< 2 saniyə olmalıdır).
-- **T - 2 saat**: Bütün maraqlı tərəflərə (IT, Biznes, Rəhbərlik) keçid hazırlığı bildirişi göndərilir.
-- **T - 15 dəqiqə**: Tətbiqlər qısa texniki fasilə rejiminə keçirilir (`Maintenance Mode`), SQL Server-də yeni yazmalar dondurulur (`READ_ONLY`).
-- **T - 0 (Cutover)**: CDC buferinin sıfıra çatması gözlənilir (son tranzaksiyalar PG-yə yazılır). Connection String PostgreSQL-ə yönləndirilir.
-- **T + 15 dəqiqə**: Smoke Testlər icra olunur (Sığorta polisi yaratmaq, axtarış etmək, hesabat çıxarmaq).
-- **T + 30 dəqiqə**: Sistem istifadəçilərə açılır. Tərs CDC (PostgreSQL $\rightarrow$ SQL Server) işə salınır.
+#### Cutover Qrafiki
+- **T - 24 saat:** Hədəf PostgreSQL bazasında indekslər, istifadəçi icazələri yoxlanılır; CDC gecikməsi (Lag) monitorinq edilir (< 2 saniyə olmalıdır).
+- **T - 2 saat:** IT və biznes komandalarına keçid hazırlığı xəbərdarlığı göndərilir.
+- **T - 15 dəqiqə:** Tətbiq xidmətləri texniki rejimə alınır (`Maintenance Mode`), SQL Server-də yeni yazmalar dayandırılır (`READ_ONLY`).
+- **T - 0 (Cutover Anı):** CDC buferinin boşalması gözlənilir (son dəqiqənin tranzaksiyaları PostgreSQL-ə yazılır). Tətbiqlərin `Connection String`-i PostgreSQL-ə yönləndirilir.
+- **T + 15 dəqiqə:** Smoke testlər icra olunur (Yeni polis satışı, müqavilə axtarışı, hesabat çıxarılması).
+- **T + 30 dəqiqə:** Sistem müştərilərə tam açılır. Tərs CDC (PostgreSQL $\rightarrow$ SQL Server) işə salınır.
 
-#### Rollback (Geri Qayıdış) Strategiyası:
-Əgər keçiddən sonrakı ilk 24 saat ərzində PostgreSQL-də kritik arxitektura problemi və ya qarşısıalınmaz data korlanması baş verərsə:
-1. PostgreSQL-ə edilən bütün yeni sətirlər tərs CDC vasitəsilə SQL Server-ə axıdıldığı üçün, SQL Server aktual qalır.
+#### Rollback (Geri Qayıdış) Zəmanəti
+Əgər keçiddən sonrakı ilk 24 saat ərzində PostgreSQL-də kritik arxitektura problemi aşkar edilərsə:
+1. PostgreSQL-ə daxil olan bütün yeni əməliyyatlar tərs CDC vasitəsilə paralel olaraq SQL Server-ə axıdıldığı üçün, SQL Server aktual qalır.
 2. Tətbiqin Connection String-i yenidən SQL Server-ə qaytarılır.
-3. **Biznes sıfır məlumat itkisi ilə köhnə bazada işini davam etdirir.**
+3. **Biznes sıfır məlumat itkisi ilə işinə davam edir.**
 
 ---
 
@@ -161,7 +161,7 @@ Miqrasiyanın uğurlu sayılması üçün 4 səviyyəli yoxlama aparılır:
 
 | Risk | Ehtimal | Təsir | Qarşısının Alınması Planı (Mitigation) |
 | :--- | :--- | :--- | :--- |
-| **Collation və Case-Sensitivity Uyğunsuzluğu** | Yüksək | Yüksək | Bütün DDL obyektləri əvvəlcədən `snake_case` kiçik hərflərlə yaradılır; mətn axtarışlarında `ILIKE` və ya `LOWER()` tətbiq olunur. |
+| **Collation və Case-Sensitivity Uyğunsuzluğu** | Yüksək | Yüksək | Bütün DDL obyektləri əvvəlcədən `snake_case` kiçik hərflərlə yaradılır; axtarışlarda `ILIKE` və ya `LOWER()` tətbiq olunur. |
 | **Tarix və Saat Qurşağı Xətaları** | Orta | Yüksək | SQL Server-dəki `DATETIME2` PostgreSQL-də mütləq `TIMESTAMPTZ` edilir və server saat qurşağı `UTC` təyin olunur. |
 | **CDC Lag Böyüməsi** | Orta | Orta | Şəbəkə zolağı genişləndirilir, kütləvi tarixi yükləmə CDC başlamazdan əvvəl bitirilir. |
 | **İndeks Çatışmazlığı Səbəbindən CPU Donması** | Yüksək | Yüksək | `pg_stat_statements` aktivləşdirilir, miqrasiyadan dərhal sonra `ANALYZE` icra olunur. |
@@ -208,7 +208,7 @@ END;
 @tab PostgreSQL
 ```sql
 -- Dialect: PostgreSQL
--- ON CONFLICT və RETURNING istifadəsi (və ya PG 15+ MERGE)
+-- ON CONFLICT və RETURNING istifadəsi
 CREATE OR REPLACE FUNCTION public.upsert_policy(
     p_policy_number VARCHAR(50),
     p_customer_id INT,
@@ -301,11 +301,12 @@ ALTER SCHEMA 'dbo' RENAME TO 'public';
 ## 4. Tez-tez edilən səhvlər
 
 > [!WARNING]
-> **Diqqət: Quoted Identifiers və CamelCase Cədvəl Adları Tələsi**
-> Əgər miqrasiya aləti SQL Server-dəki cədvəlləri `"Policies"` və ya `"PolicyID"` kimi cüt dırnaqla yaratsa, PostgreSQL onları dəqiq böyük hərflərlə qeyd edir. Sonradan proqramçı kodda `SELECT policyid FROM policies` yazdıqda PostgreSQL `column "policyid" does not exist` xətası verəcək! **Qızıl Qayda:** Bütün obyekt və sütun adları miqrasiya zamanı birmənalı olaraq kiçik hərflərə (`snake_case`) çevrilməlidir.
+> **Quoted Identifiers və CamelCase Cədvəl Adları Tələsi**
+> Əgər miqrasiya aləti SQL Server-dəki cədvəlləri `"Policies"` və ya `"PolicyID"` kimi cüt dırnaqla yaratsa, PostgreSQL onları dəqiq böyük hərflərlə saxlayır. Sonradan proqramçı kodda `SELECT policyid FROM policies` yazdıqda PostgreSQL `column "policyid" does not exist` xətası verəcək!
+> **Qızıl Qayda:** Bütün obyekt və sütun adları miqrasiya zamanı birmənalı olaraq kiçik hərflərə (`snake_case`) çevrilməlidir.
 
 > [!NOTE]
-> **Qeyd: Sequence (Ardıcllıq) Dəyərlərinin Yenilənməməsi**
+> **Sequence (Ardıcllıq) Dəyərlərinin Yenilənməməsi**
 > Cədvəllər köçürüldükdən sonra mövcud ID-lər (məsələn, 1-dən 500,000-ə qədər) yeni bazaya oturur. Lakin PostgreSQL-in daxili `SEQUENCE`-i hələ də 1 dəyərində qalır! İlk yeni `INSERT` sorğusunda `duplicate key value violates unique constraint` xətası baş verir. Miqrasiyadan dərhal sonra bütün ardıcıllıqlar yenilənməlidir:
 > `SELECT setval(pg_get_serial_sequence('public.policies', 'policy_id'), coalesce(max(policy_id), 1)) FROM public.policies;`
 
@@ -313,8 +314,11 @@ ALTER SCHEMA 'dbo' RENAME TO 'public';
 
 ## 5. Vakansiya ilə əlaqə (Atəşgah Sığorta)
 
-- **Vakansiya tələbi**: *"Microsoft SQL Server-dən PostgreSQL-ə miqrasiyanın layihələndirilməsi və idarə edilməsi (sxemlərin çevrilməsi, uyğunluğun qiymətləndirilməsi, məlumatların bütövlüyünün təmin olunması, optimal performans, fasiləsizlik, cutover plan, rollback strategiyası)..."*
-- **Sənin rolun**: Sığorta polisləri, zərər iddiaları və maliyyə ödənişləri bazasını biznesi dayandırmadan köçürmək; tiplərin dəqiq xəritəsini qurmaq; `Debezium` CDC boru kəməri ilə paralel sinxronizasiya təmin etmək; Rollback planı ilə şirkətin risklərini minimuma endirmək.
+- **Vakansiya Tələbi:** *"Microsoft SQL Server-dən PostgreSQL-ə miqrasiyanın layihələndirilməsi və idarə edilməsi (sxemlərin çevrilməsi, uyğunluğun qiymətləndirilməsi, məlumatların bütövlüyünün təmin olunması, optimal performans, fasiləsizlik, cutover plan, rollback strategiyası)..."*
+- **Sənin Rolun:** 
+  1. Sığorta polisləri, zərər iddiaları və maliyyə ödənişləri bazasını biznesi dayandırmadan köçürmək.
+  2. SQL Server və PostgreSQL arasında tiplərin və T-SQL prosedurlarının dəqiq çevrilmə xəritəsini qurmaq.
+  3. `Debezium` CDC boru kəməri ilə minimal fasiləli Cutover və tərs replikasiyalı Rollback planını icra etmək.
 
 ---
 

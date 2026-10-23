@@ -16,9 +16,15 @@ summary: "Lake vs Warehouse vs Lakehouse, S3 əsasları, Parquet, Medallion arxi
 ## 1. Qısa izah (Sadə dildə və analogiya ilə)
 
 Məlumat anbarlarının təkamülünü **şəhər arxivinin inkişaf tarixi** kimi təsəvvür edin:
-- **Data Warehouse (DWH - Klassik Qapalı Kitabxana)**: Çox səliqəli, hər kitabın yeri nömrələnib, təhlükəsizdir (ACID, tranzaksiya etibarlılığı). Lakin ora yalnız müəyyən formatda və ölçüdə kitablar qoyula bilər (yalnız strukturlaşdırılmış SQL cədvəlləri). Kitabxananı böyütmək həddən artıq baha başa gəlir (bahalı disklər və lisenziyalar).
-- **Data Lake (Açıq və Nəhəng Anbar Zirzəmisi - S3 / Obyekt Yaddaşı)**: Şəhərin kənarında nəhəng və ucuz bir anbardır. Bura hər şeyi tökmək olar: CSV, JSON, loqlar, PDF sənədlər, şəkillər. Lakin bir müddət sonra bura zibilliyə çevrilir (**Data Swamp**): heç kim bilmir hansı fayl yarımçıq qalıb, eyni anda iki nəfər yazanda fayllar korlanır, tranzaksiya anlayışı (ACID) yoxdur.
-- **Data Lakehouse (Müasir Ağıllı Arxiv)**: Obyekt yaddaşının (Amazon S3 / MinIO) ucuz, sonsuz genişlənə bilən tutumu üzərinə **Ağıllı Cədvəl Formatlarının (Delta Lake və Apache Iceberg)** gətirilməsidir. Fayllar yenə ucuz Parquet kimi qalır, lakin onların üzərində güclü **Tranzaksiya Loqu və Metadata Qatları** oturur. Nəticədə həm S3-ün ucuzluğundan istifadə edirik, həm də DWH-ın ACID etibarlılığını, Time Travel (tarixə qayıtmaq) və sürətli sorğu imkanlarını əldə edirik!
+
+### Data Warehouse (Klassik Qapalı Kitabxana)
+Çox səliqəlidir, hər kitabın yeri nömrələnib, təhlükəsizdir (ACID, tranzaksiya etibarlılığı). Lakin ora yalnız müəyyən formatda və ölçüdə kitablar qoyula bilər (yalnız strukturlaşdırılmış SQL cədvəlləri). Kitabxananı böyütmək həddən artıq baha başa gəlir (bahalı disklər və lisenziyalar).
+
+### Data Lake (Açıq və Nəhəng Anbar Zirzəmisi - S3 / Obyekt Yaddaşı)
+Şəhərin kənarında nəhəng və ucuz bir anbardır. Bura hər şeyi tökmək olar: CSV, JSON, loqlar, PDF sənədlər, şəkillər. Lakin bir müddət sonra bura zibilliyə çevrilir (**Data Swamp**): heç kim bilmir hansı fayl yarımçıq qalıb, eyni anda iki nəfər yazanda fayllar korlanır, tranzaksiya anlayışı (ACID) yoxdur.
+
+### Data Lakehouse (Müasir Ağıllı Arxiv)
+Obyekt yaddaşının (Amazon S3 / MinIO) ucuz, sonsuz genişlənə bilən tutumu üzərinə **Ağıllı Cədvəl Formatlarının (Delta Lake və Apache Iceberg)** gətirilməsidir. Fayllar yenə ucuz Parquet kimi qalır, lakin onların üzərində güclü **Tranzaksiya Loqu və Metadata Qatları** oturur. Nəticədə həm S3-ün ucuzluğundan istifadə edirik, həm də DWH-ın ACID etibarlılığını, Time Travel (tarixə qayıtmaq) və sürətli analitik sorğu imkanlarını əldə edirik!
 
 > [!TIP]
 > **Müsahibədə belə de:**
@@ -40,29 +46,30 @@ Məlumat anbarlarının təkamülünü **şəhər arxivinin inkişaf tarixi** ki
 
 ---
 
-### 2.2. Amazon S3 Əsasları (Storage Foundation)
-- **Buckets və Object Keys**:
-  - `Bucket`: Qlobal miqyasda unikal adlı əsas konteyner (məsələn: `s3://atashgah-insurance-lakehouse`).
-  - `Object Key / Prefix`: S3-də ənənəvi qovluq iyerarxiyası yoxdur; `prefix` sadəcə obyekt açarının adıdır (məsələn: `bronze/policies/year=2026/file.parquet`). S3 hər bir unikal prefiks üzrə paralel saniyədə 3,500 PUT/POST və 5,500 GET sorğusuna xidmət edir.
-- **Storage Classes (Saxlama Sinifləri)**:
-  - `S3 Standard`: Tez-tez oxunan canlı analitik məlumatlar üçün (Gold/Silver).
-  - `S3 Standard-IA (Infrequent Access)`: Ayda 1-2 dəfə oxunan, lakin dərhal əlçatan olması tələb olunan arxivlər (Bronze).
-  - `S3 Glacier Flexible / Deep Archive`: Qanuni audit üçün 5–10 il saxlanılan, açılması bir neçə dəqiqə və ya saat çəkən ən ucuz arxivlər.
-- **S3 Lifecycle Policies**: Məlumatın yaşlandıqca avtomatik olaraq Standard $\rightarrow$ IA $\rightarrow$ Glacier keçidini və ya 7 ildən sonra silinməsini təmin edən avtomatlaşdırma qaydaları.
-- **IAM (Identity & Access Management)**: S3 bucket-lərinə və prefikslərinə ən kiçik səlahiyyət prinsipi (Least Privilege) ilə giriş nəzarəti (Insurance PII məlumatlarının qorunması).
+### 2.2. Amazon S3 Obyekt Saxlama Əsasları
+
+Amazon S3 müasir Lakehouse arxitekturasının təməl fiziki saxlama qatıdır:
+
+| S3 Konsepti | Təyinatı və İş Mexanizmi | Data Engineering Qaydası |
+| :--- | :--- | :--- |
+| **Bucket** | Qlobal miqyasda unikal adlı əsas konteyner (məsələn: `s3://atashgah-lakehouse`). | Şirkət üzrə mühitlərə görə bölünür (`prod-lakehouse`, `dev-lakehouse`). |
+| **Object Key & Prefix** | S3-də fiziki qovluq yoxdur; prefiks fayl adının bir hissəsidir (`bronze/policies/year=2026/p1.parquet`). | S3 hər bir prefiks üzrə saniyədə 3,500 PUT və 5,500 GET sorğusuna xidmət edir. |
+| **S3 Standard** | Yüksək sürətli, tez-tez oxunan canlı analitik məlumatlar üçün. | Gold və Silver analitik qatları üçün istifadə olunur. |
+| **S3 Standard-IA** | Nadir oxunan (Infrequent Access), lakin dərhal əlçatan arxivlər. | Xam Bronze məlumatlarının saxlanması üçün xərci 40% azaldır. |
+| **S3 Glacier / Deep Archive** | Qanunvericilik tələbi ilə 5–10 il saxlanılan ən ucuz arxiv sinfi. | İllik audit və tarixi sığorta loqları üçün nəzərdə tutulur. |
+| **Lifecycle Policies** | Məlumatın yaşlandıqca avtomatik olaraq Standard $\rightarrow$ IA $\rightarrow$ Glacier keçidi. | Məlumatları 90 gündən sonra avtomatik IA sinfinə keçirir. |
 
 ---
 
 ### 2.3. Fayl Formatları: Sətir vs Sütun Əsaslı (Row vs Columnar)
-- **Sətir Əsaslı (Row-Oriented: CSV, JSON, Avro)**:
-  - Bütün sətrin atributları diskdə ardıcıl saxlanılır.
-  - Sürətli tək sətir yazma və Kafka axınları üçün idealdır (xüsusilə `Avro` şema dəstəyi ilə kəfkir axınlarında liderdir).
-  - Analitik sorğularda (məsələn: 100 milyon sətirdən yalnız `premium` sütununun cəmi) bütün cədvəli diskdən oxumağa məcbur edir (çox ləngdir).
-- **Sütun Əsaslı (Columnar: Apache Parquet, ORC)**:
-  - Eyni sütunun məlumatları diskdə yanaşı saxlanılır.
-  - **Sıxılma (Compression)**: Eyni tipli dəyərlər ardıcıl gəldiyi üçün `Snappy`, `Gzip` və `ZSTD` alqoritmləri ilə 70–85% sıxılma təmin olunur.
-  - **Column Pruning (Sütun Kəsmə)**: Sorğu yalnız `SELECT premium` edirsə, digər 50 sütun diskdən heç oxunmur!
-  - **Predicate Pushdown (Statistika Kəsmə)**: Parquet faylının metadata hissəsində hər blok üçün `min/max` dəyərlər saxlanılır. Əgər `WHERE year = 2026` yazılıbsa və faylın max dəyəri 2025-dirsə, fayl bütövlükdə ötürülür (**File Skipping**).
+
+| Müqayisə Parametri | Sətir Əsaslı (Row-Oriented: CSV, JSON, Avro) | Sütun Əsaslı (Columnar: Apache Parquet, ORC) |
+| :--- | :--- | :--- |
+| **Fiziki Düzülüş** | Bütün sətrin sütunları diskdə ardıcıl yazılır. | Eyni sütunun dəyərləri diskdə yanaşı saxlanılır. |
+| **Sıxılma Nisbəti** | Çox aşağı (Müxtəlif tipli dəyərlər ardıcıl gəlir). | **70–85% Sıxılma** (`Snappy`, `ZSTD` alqoritmləri ilə). |
+| **Analitik Sorğular** | Bir sütun tələb olunsa belə, bütün cədvəl oxunmalıdır (Ləng I/O). | **Column Pruning:** Yalnız sorğudakı sütunlar diskdən oxunur. |
+| **Filtrləmə Sürəti** | Sətir-bə-sətir yoxlanılır. | **Predicate Pushdown:** Hər blokun `Min/Max` statistikası ilə fayllar bütöv ötürülür. |
+| **Ən Uyğun İstifadə** | Kafka hadisə axınları (Avro) və tək sətir yazmaları. | **Data Lakehouse, Spark və analitik SQL hesabatları (Parquet).** |
 
 ---
 
@@ -105,37 +112,48 @@ Aşağıdakı diaqram Lakehouse-da məlumatın keyfiyyət süzgəcindən keçər
 
 ---
 
-### 2.5. Delta Lake Dərinliyi (Databricks / Linux Foundation)
-- **`_delta_log/` Mexanizmi**:
-  - Delta cədvəli Parquet faylları və həmin qovluq daxilindəki `_delta_log/` alt-qovluğundan ibarətdir.
-  - Hər bir tranzaksiya (INSERT, DELETE, UPDATE) ardıcıl JSON faylı kimi qeyd olunur: `000000.json`, `000001.json`...
-  - Hər 10 tranzaksiyadan bir bütün JSON-lar birləşdirilərək kompakt Parquet formatında checkpoint yaradılır: `000010.checkpoint.parquet`.
-  - Sorğu mühərriki cədvəli oxuyanda diski skan etmir; son checkpoint-i və ondan sonrakı JSON-ları oxuyaraq hansı Parquet fayllarının aktiv olduğunu dəqiq müəyyənləşdirir (**Atomic Commit**).
-- **Time Travel (Zaman Səyahəti)**:
-  - Cədvəlin istənilən keçmiş vəziyyətini oxumaq imkanı: `SELECT * FROM table VERSION AS OF 5` və ya `TIMESTAMP AS OF '2026-10-20'`.
-- **Şema Təhlükəsizliyi**:
-  - `Schema Enforcement`: Uyğun gəlməyən yeni sütun gələrsə yazma xəta verir və bazanı qoruyur.
-  - `Schema Evolution`: `option('mergeSchema', 'true')` ilə yeni sütunlar təhlükəsiz şəkildə qəbul edilir.
-- **Fayl Baxımı (File Maintenance)**:
-  - `OPTIMIZE`: Çoxlu xırda faylları birləşdirib 1 GB-lıq optimal fayllara yığır (**Bin-packing**). `Z-ORDER BY (customer_id)` ilə eyni dəyərlər eyni fayllara qruplaşdırılır və axtarış sürəti 100x artır.
-  - `VACUUM`: Köhnə, artıq istifadə olunmayan silinmiş Parquet fayllarını diskdən fiziki silir (standart saxlama müddəti: 7 gün).
+### 2.5. Delta Lake Daxili Memarlığı
+
+Delta Lake Parquet fayllarının üzərinə tranzaksiya loqu gətirir:
+
+#### 1. `_delta_log/` Mexanizmi
+- Hər bir əməliyyat (yazma, silmə, yeniləmə) `_delta_log/` qovluğunda ardıcıl JSON faylı kimi qeyd olunur: `000000.json`, `000001.json`...
+- Hər 10 tranzaksiyadan bir bütün JSON-lar birləşdirilərək kompakt Parquet formatında checkpoint yaradılır: `000010.checkpoint.parquet`.
+- Oxuma zamanı sorğu mühərriki diski skan etmir; sonuncu checkpoint və sonrakı JSON-ları oxuyaraq hansı Parquet fayllarının etibarlı olduğunu dəqiq müəyyənləşdirir (**Atomic Commit**).
+
+#### 2. Time Travel (Zaman Səyahəti)
+Cədvəlin keçmiş versiyasını oxumaq imkanı:
+```sql
+-- Dialect: SQL
+SELECT * FROM policies VERSION AS OF 3;
+SELECT * FROM policies TIMESTAMP AS OF '2026-10-20 00:00:00';
+```
+
+#### 3. Şema Təhlükəsizliyi
+- **Schema Enforcement:** Cədvələ elan olunmamış yeni sütun gəldikdə yazmanı dayandırır və bazanı zibillənmədən qoruyur.
+- **Schema Evolution:** `.option("mergeSchema", "true")` parametri ilə yeni sütunlar təhlükəsiz qəbul edilir.
+
+#### 4. Fayl Baxımı (Compaction)
+- `OPTIMIZE`: Xırda Parquet fayllarını birləşdirib 500 MB – 1 GB-lıq optimal fayllara yığır (**Bin-packing**). `Z-ORDER BY (customer_id)` ilə eyni dəyərlər eyni fayllara qruplaşdırılır və axtarış 100x sürətlənir.
+- `VACUUM`: Köhnə, artıq istifadə olunmayan ləğv edilmiş Parquet fayllarını fiziki silir (standart saxlama müddəti: 7 gün).
 
 ---
 
-### 2.6. Apache Iceberg Dərinliyi (Apache Software Foundation)
-- **Iceberg 3-Qatlı Metadata Memarlığı**:
-  1. **Iceberg Catalog**: Cədvəlin cari ən son `Metadata File` ünvanını saxlayan mərkəz (AWS Glue, Nessie, REST Catalog).
-  2. **Metadata File (`vN.metadata.json`)**: Cədvəlin tam şeması, partisiya qaydaları, snapshot tarixçəsi və cari snapshot göstəricisi.
-  3. **Manifest List (`snap-ID.avro`)**: Həmin snapshot-a aid olan Manifest fayllarının siyahısı və hər manifestin əhatə etdiyi partisiya aralıqları.
-  4. **Manifest File (`manifest-ID.avro`)**: Hər bir fərdi Parquet faylının fiziki ünvanı və sütunlar üzrə `min/max`, `null_count` statistikaları.
-  5. **Data Files (`.parquet`)**: Faktiki məlumat faylları.
-- **Hidden Partitioning (Gizli Partisiya)**:
-  - Digər sistemlərdə istifadəçi cədvələ müraciət edərkən partisiya sütununu bilməli idi (`WHERE date = '2026-10-23'`).
-  - Iceberg-də partisiya funksiyası gizlidir: `timestamp` sütunu üzərindən `days(event_time)` partisiya təyin edilir. İstifadəçi sadəcə `WHERE event_time >= '2026-10-23 10:00'` yazdıqda Iceberg avtomatik yalnız lazımi günün partisiya qovluqlarını oxuyur!
-- **Partition Evolution (Partisiyanın Yenilənməsi)**:
-  - Əgər cədvəl əvvəllər `month(event_time)` üzrə partisiya olunubsa, lakin məlumat artıb və `day(event_time)`-a keçmək istəyiriksə, **köhnə məlumatları yenidən yazmağa ehtiyac yoxdur**! Köhnə fayllar ay üzrə qalır, yeni yazılanlar gün üzrə partisiya olunur; Iceberg hər iki qaydanı eyni cədvəldə şəffaf idarə edir.
-- **Field ID-based Schema Evolution**:
-  - Sütunlar adla deyil, unikal `Field ID` ilə izlənir. Sütunun adını dəyişmək, yerini dəyişmək və ya silmək heç vaxt tarixi Parquet fayllarını korlamır və data köçürülməsi tələb etmir.
+### 2.6. Apache Iceberg 3-Qatlı Metadata Memarlığı
+
+Apache Iceberg heç bir qovluq və fayl adı strukturuna bağlı qalmadan cədvəl səviyyəsində tam müstəqil metadata iyerarxiyası təqdim edir:
+
+| Qat Səviyyəsi | Komponent | Fayl Formatı | Təyinatı və Saxladığı Məlumat |
+| :--- | :--- | :--- | :--- |
+| **Kataloq Qatı** | **Iceberg Catalog** | AWS Glue / Nessie / REST | Cədvəlin ən son `Metadata File` ünvanını saxlayan mərkəz. |
+| **Metadata Qatı** | **Metadata File** | `vN.metadata.json` | Cədvəlin tam şeması, partisiya qaydaları, snapshot-ların siyahısı. |
+| **Manifest Siyahısı** | **Manifest List** | `snap-ID.avro` | Həmin snapshot-a daxil olan Manifest faylları və onların partisiya aralıqları. |
+| **Manifest Qatı** | **Manifest File** | `manifest-ID.avro` | Fərdi Parquet fayllarının ünvanı və hər sütunun `Min/Max` statistikası. |
+| **Faktiki Məlumat** | **Data Files** | `.parquet` / `.orc` | Faktiki sıxılmış sığorta məlumatları faylları. |
+
+#### Hidden Partitioning və Partition Evolution
+- **Hidden Partitioning (Gizli Partisiya):** İstifadəçi partisiya sütununu bilməyə məcbur deyil. Əgər cədvəl `days(event_time)` ilə partisiya olunubsa, `WHERE event_time >= '2026-10-23'` yazdıqda Iceberg avtomatik olaraq digər günlərin manifestlərini ixtisar edir.
+- **Partition Evolution:** Partisiya qaydasını dəyişdikdə (məsələn, aydan günə keçdikdə) köhnə məlumatları yenidən yazmaq tələb olunmur. Köhnə fayllar ay üzrə qalır, təzələr gün üzrə yazılır; Iceberg hər iki qaydanı eyni cədvəldə şəffaf idarə edir.
 
 ---
 
@@ -153,13 +171,14 @@ Aşağıdakı diaqram Lakehouse-da məlumatın keyfiyyət süzgəcindən keçər
 ---
 
 ### 2.8. Small Files Problemi və Həll Yolları
-- **Problem**: Streaming axınlarında və ya hər 5 dəqiqədən bir işləyən mikro-batch ETL-lərdə S3-ə minlərlə 50–100 KB-lıq xırda Parquet faylları yazılır. Nəticədə metadata ölçüsü şişir, S3 API çağırışları çoxalır və Trino/Spark sorğu göndərəndə vaxtının 90%-ni faylları açmağa sərf edir.
-- **Həll Yolları**:
-  1. *Yazma anında*: Spark-da `coalesce()` və ya `repartition()` ilə fayl sayını nizamlamaq.
-  2. *Dövri baxım (Compaction)*:
-     - Delta Lake: `OPTIMIZE table_name` əmri ilə xırda faylları birləşdirmək.
-     - Iceberg: `rewrite_data_files` proseduru ilə arxa planda faylları birləşdirmək.
-  3. *Partisiya Strategiyası*: Yüksək kardinallı sütunlara (məsələn, `customer_id` və ya `hour`) görə partisiya açmamaq; hər partisiya ən azı **256 MB – 1 GB** məlumat saxlamalıdır.
+
+Streaming axınlarında və ya hər 5 dəqiqədən bir işləyən mikro-batch ETL-lərdə S3-ə minlərlə 50–100 KB-lıq xırda Parquet faylları yazılır. Nəticədə metadata ölçüsü şişir və mühərriklər vaxtının 90%-ni faylları açmağa sərf edir.
+
+| Mərhələ | Həll Yolu | İzahı |
+| :--- | :--- | :--- |
+| **Yazma Anında** | `df.coalesce(n)` və ya `repartition()` | Spark yazmazdan əvvəl çıxış fayllarının sayını optimal həddə endirir. |
+| **Dövri Baxım (Compaction)** | Delta: `OPTIMIZE table` <br> Iceberg: `rewrite_data_files` | Xırda fayllar arxa planda 500 MB – 1 GB-lıq optimal böyük fayllara birləşdirilir. |
+| **Partisiya Nizamlanması** | Over-partitioning-dən qaçmaq | Hər partisiya ən azı 256 MB – 1 GB məlumat saxlayacaq şəkildə planlaşdırılmalıdır. |
 
 ---
 
@@ -264,19 +283,24 @@ VACUUM delta.`s3a://atashgah-lakehouse/silver/policies` RETAIN 168 HOURS;
 ## 4. Tez-tez edilən səhvlər
 
 > [!WARNING]
-> **Diqqət: `VACUUM RETAIN 0 HOURS` Təhlükəsi**
-> Əgər Delta Lake və ya Iceberg-də retensiya müddətini 0 qoysanız və dərhal `VACUUM` etsəniz, həmin anda arxa planda aktiv işləyən uzunmüddətli Spark oxuma sorğuları çökəcək (`FileNotFoundException`), çünki oxuduqları Parquet faylı altlarından silinəcək! Rəsmi təhlükəsizlik qaydası: heç vaxt `VACUUM`-u 7 gündən (168 saat) aşağı təyin etməyin.
+> **`VACUUM RETAIN 0 HOURS` Təhlükəsi**
+> Əgər Delta Lake və ya Iceberg-də retensiya müddətini 0 qoysanız və dərhal `VACUUM` etsəniz, həmin anda arxa planda aktiv işləyən uzunmüddətli Spark oxuma sorğuları çökəcək (`FileNotFoundException`), çünki oxuduqları Parquet faylı altlarından silinəcək!
+> **Qızıl Qayda:** Heç vaxt istehsalat mühitində `VACUUM`-u 7 gündən (168 saat) aşağı təyin etməyin.
 
 > [!NOTE]
-> **Qeyd: Həddindən artıq xırda partisiya açmaq (Over-Partitioning)**
-> Cədvəli həm ilə, həm aya, həm günə, həm də sığorta filialına görə partisiya etdikdə hər qovluqda cəmi 50 KB fayl qalır. Nəticədə 1 milyon fayl yaranır və metadata oxunması sorğunu 10 dəfə ləngidir. Qızıl qayda: Partisiyadakı data ən azı 500 MB – 1 GB həcmə çatdıqda partisiya açılmalıdır.
+> **Həddindən Artıq Xırda Partisiya Açmaq (Over-Partitioning)**
+> Cədvəli həm ilə, həm aya, həm günə, həm də sığorta filialına görə partisiya etdikdə hər qovluqda cəmi 50 KB fayl qalır. Nəticədə 1 milyon fayl yaranır və metadata oxunması sorğunu 10 dəfə ləngidir.
+> **Düzgün Qayda:** Partisiyadakı məlumat ən azı 500 MB – 1 GB həcmə çatdıqda partisiya açılmalıdır.
 
 ---
 
 ## 5. Vakansiya ilə əlaqə (Atəşgah Sığorta)
 
-- **Vakansiya tələbi**: *"Amazon S3 üzərində Apache Iceberg və ya Delta Lake istifadə edərək miqyaslana bilən Lakehouse memarlığının layihələndirilməsi və tətbiqi... Məlumatın saxlanması və inteqrasiyası prinsipləri."*
-- **Sənin rolun**: Sığorta şirkətinin tarixi polislərini və hadisələrini bahalı disklərdən S3 üzərinə çıxarmaq; Medallion memarlığını qurmaq; Delta/Iceberg formatları ilə ACID etibarlılığını təmin etmək; Z-Order və Compaction ilə analitik sorğuların sürətini DWH səviyyəsində saxlamaq.
+- **Vakansiya Tələbi:** *"Amazon S3 üzərində Apache Iceberg və ya Delta Lake istifadə edərək miqyaslana bilən Lakehouse memarlığının layihələndirilməsi və tətbiqi... Məlumatın saxlanması və inteqrasiyası prinsipləri."*
+- **Sənin Rolun:** 
+  1. Sığorta şirkətinin tarixi polislərini və hadisələrini bahalı disk bazalarından S3 üzərinə çıxarmaq.
+  2. 3-qatlı Medallion (Bronze, Silver, Gold) memarlığını qurmaq.
+  3. Delta və Iceberg formatları ilə ACID etibarlılığını, Time Travel və Z-Order ilə analitik sorğu sürətini təmin etmək.
 
 ---
 

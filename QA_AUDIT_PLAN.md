@@ -30,15 +30,18 @@ Bu sənəd saytdakı bütün dərs izahlarının, kodların və praktiki məşql
   - Fakt və Ölçü cədvəllərinin daxili qarışıq siyahıları ləğv edildi, səliqəli alt-bölmələrə və müqayisə cədvəllərinə ayrıldı.
   - Transactional, Periodic Snapshot, Accumulating Snapshot fakt növləri sığorta nümunələri ilə sadə cədvəldə izah edildi.
   - SCD Type 0, 1, 2, 3 fərqləri və Surrogate Key-in 3 zəruri səbəbi aydın şəkildə strukturlaşdırıldı.
-- [ ] **Addım 1.3: `01-sql-fundamentals-advanced.md`**
-  - JOIN növləri, Window funksiyaları, CTE, Tranzaksiya izolyasiya səviyyələri və kilidləmə izahlarındakı `**` kirliliyini təmizləmək.
-  - T-SQL və PostgreSQL dialekt tablarını yoxlamaq.
-- [ ] **Addım 1.4: `02-microsoft-sql-server.md`**
-  - Buffer Pool, Data/Log faylları, DMV-lər (`sys.dm_exec_query_stats`), Query Store və indeksləmə bölmələrini səliqəli dərslik formasına salmaq.
-- [ ] **Addım 1.5: `04-sql-server-postgresql-miqrasiya.md`**
-  - Data type mapping cədvəlini, T-SQL $\rightarrow$ PL/pgSQL çevirmələrini, CDC və Cutover addımlarını oxunaqlı təlimat şəklinə gətirmək.
-- [ ] **Addım 1.6: `06-lakehouse-table-formats.md`**
-  - Delta Lake (`_delta_log`) və Apache Iceberg (Kataloq və manifest ağacı) bölmələrini, Medallion arxitekturasını aydın vizual bloklara ayırmaq.
+- [x] **Addım 1.3: `01-sql-fundamentals-advanced.md` (Tamamlandı)**
+  - JOIN növləri, Window sıralama funksiyaları və ACID izolyasiya səviyyələri müqayisə cədvəllərinə salındı.
+  - T-SQL və PostgreSQL dialekt tabları və kod sintaksisləri təsdiqləndi.
+- [x] **Addım 1.4: `02-microsoft-sql-server.md` (Tamamlandı)**
+  - Buffer Pool, Data/Log faylları, T-SQL obyektləri və Tempdb strukturları detallı cədvəllərlə yenidən tərtib edildi.
+  - DMV-lər, Wait Stats və ilk 2 həftəlik inventarizasiya planı səliqəli dərslik formasına salındı.
+- [x] **Addım 1.5: `04-sql-server-postgresql-miqrasiya.md` (Tamamlandı)**
+  - Data type mapping cədvəli, T-SQL $\rightarrow$ PL/pgSQL çevrilmələri, çətin obyektlər və 4 səviyyəli Data Validation cədvəli səliqəyə salındı.
+  - CDC Near-Zero Downtime, Cutover qrafiki və Rollback strategiyası aydın təlimat şəklinə gətirildi.
+- [x] **Addım 1.6: `06-lakehouse-table-formats.md` (Tamamlandı)**
+  - Amazon S3 saxlama sinifləri, Row vs Columnar və Iceberg 3-qatlı metadata arxitekturası müqayisə cədvəllərinə salındı.
+  - Delta Lake (`_delta_log`), Medallion diaqramı və Small Files həlləri səliqəli vizual bloklarla strukturlaşdırıldı.
 
 ---
 

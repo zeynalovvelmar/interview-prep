@@ -16,10 +16,18 @@ summary: "Fiziki fayllar, səhifə strukturu, Buffer Pool, T-SQL obyektləri, ic
 ## 1. Qısa izah (Sadə dildə və analogiya ilə)
 
 Microsoft SQL Server-i yüksək mühafizəli və mütəşəkkil **mərkəzi bank xəzinəsi** kimi təsəvvür edin:
-- **MDF və NDF faylları (Əsas və Köməkçi Yaddaş)**: Xəzinənin dərin zirzəmisindəki polad seyflərdir. Bütün sənədlər burada 8 KB-lıq qovluqlarda (**Data Pages**) və 64 KB-lıq bloklarda (**Extents**) səliqə ilə düzülüb.
-- **Buffer Pool (Əməliyyat Masası - RAM)**: Xəzinədarın iş masasıdır. Müştəri sənəd istədikdə, bütöv bir 8 KB-lıq qovluq diskdən masaya gətirilir. Əgər qovluq artıq masadadırsa, cavab dərhal verilir (**Buffer Cache Hit**).
-- **Transaction Log (LDF faylı - Hadisə Jurnalı)**: Xəzinənin qapısındakı mühafizəçinin dəftəridir. Seyfdə hər hansı bir sənədin yeri dəyişdirilməzdən və ya məbləğ yazılmazdan əvvəl, dərhal bu jurnala ardıcıl şəkildə qeyd olunur (**Write-Ahead Logging - WAL**). Elektrik sönsə belə, bu jurnal əsasında hər şey bərpa olunur (**Crash Recovery**).
-- **Optimizer və Statistika**: Təcrübəli naviqatordur. Bir sorğu gələndə minlərlə mümkün yol arasından ən az I/O və CPU xərcləyən ən optimal icra planını (**Execution Plan**) seçir. Əgər onun əlindəki xəritə (Statistika) köhnəlibsə, 1 saniyəlik sorğu saatlarla davam edən kabusa çevrilir.
+
+### MDF və NDF Faylları: Zirzəmidəki Polad Seyflər
+Bütün məlumatlar burada 8 KB-lıq sənəd qovluqlarında (**Data Pages**) və 64 KB-lıq bloklarda (**Extents**) səliqə ilə düzülüb. Böyük həcmli sığorta arxivləri disk yükünü balanslaşdırmaq üçün fərqli disklərdəki köməkçi seyflərə (`.ndf`) paylanır.
+
+### Buffer Pool: Xəzinədarın İş Masası (RAM)
+Müştəri sənəd istədikdə, bütöv bir 8 KB-lıq səhifə diskdən masaya gətirilir. Əgər tələb olunan səhifə artıq masadadırsa, cavab dərhal verilir (**Buffer Cache Hit**).
+
+### Transaction Log (LDF Faylı): Mühafizəçinin Jurnalı
+Seyfdə hər hansı bir sənədin yeri dəyişdirilməzdən və ya məbləğ yazılmazdan əvvəl, dərhal bu jurnala ardıcıl şəkildə qeyd olunur (**Write-Ahead Logging - WAL**). Server qəfil sönsə belə, bu jurnal əsasında hər şey bərpa olunur (**Crash Recovery**).
+
+### Optimizer və Statistika: Təcrübəli Naviqator
+Bir sorğu daxil olduqda, minlərlə mümkün yol arasından ən az I/O və CPU xərcləyən ən optimal icra planını (**Execution Plan**) seçir. Əgər onun əlindəki məlumat paylanması xəritəsi (Statistika) köhnəlibsə, 1 saniyəlik sadə sorğu saatlarla davam edən darboğaza çevrilir.
 
 > [!TIP]
 > **Müsahibədə belə de:**
@@ -30,85 +38,83 @@ Microsoft SQL Server-i yüksək mühafizəli və mütəşəkkil **mərkəzi bank
 ## 2. Əsas anlayışlar (Ətraflı İzah)
 
 ### 2.1. Fiziki Arxitektura və Saxlama Vahidləri
-- **Data Files (`.mdf` və `.ndf`)**:
-  - `.mdf` (Primary Data File): Verilənlər bazasının başlanğıc nöqtəsi və sistem cədvəllərinin saxlandığı əsas fayl.
-  - `.ndf` (Secondary Data Files): Böyük bazalarda I/O yükünü fərqli disklərə paylamaq üçün yaradılan əlavə məlumat faylları.
-  - `Filegroups`: Məlumat fayllarını məntiqi qruplaşdırmaq və cədvəlləri/indeksləri spesifik disklərdə yerləşdirmək üçün istifadə olunur.
-- **Pages və Extents**:
-  - **Data Page (8 KB)**: SQL Server-də məlumatın fiziki oxunma və yazılma vahididir. 96 bayt başlıq (Header), 8060 bayt istifadəçi məlumatı və sətir ofset yuvalarından ibarətdir. Sətir 8060 baytdan böyük olduqda `LOB_DATA` (Large Object) səhifələrinə çıxarılır.
-  - **Extent (64 KB)**: 8 ədəd ardıcıl səhifədən ibarətdir. *Uniform Extent* (bütün 8 səhifə tək bir obyektə məxsusdur) və *Mixed Extent* (kiçik cədvəllər arasında paylaşılır).
-- **Buffer Pool**:
-  - SQL Server RAM-ının əsas hissəsi.
-  - **Data Cache**: Diskdən oxunmuş məlumat səhifələri.
-  - **Plan Cache**: Kompilyasiya olunmuş T-SQL sorğu və prosedur icra planları.
-  - **Dirty Page**: RAM-da yenilənmiş, lakin hələ MDF faylına yazılmamış səhifə.
-  - **Checkpoint**: Bütün dirty page-ləri diskə yazan arxa plan prosesi.
-  - **Lazy Writer**: RAM çatışmazlığı olduqda köhnə/az istifadə olunan səhifələri təmizləyərək yeni oxumalar üçün yer açan proses.
-- **Transaction Log (`.ldf`) və Virtual Log Files (VLFs)**:
-  - LDF faylı daxilən dairəvi (circular) strukturda işləyən kiçik **VLF** (Virtual Log File) parçalarına bölünür.
-  - Həddindən artıq kiçik addımlarla avtomatik böyümə (`Auto-growth 1MB`) minlərlə xırda VLF yaradır (**VLF Fragmentation**) və verilənlər bazasının açılmasını, backup/restore prosesini kəskin ləngidir.
-- **Recovery Models (Bərpa Modelləri)**:
-  - **Full**: Hər bir DML/DDL əməliyyatı tam loqlanır. Point-in-time recovery mümkündür. Müntəzəm Log Backup tələb edir, əks halda LDF diski doldurur!
-  - **Simple**: Checkpoint keçən kimi inaktiv loqlar təmizlənir. Diskə qənaət edir, lakin yalnız son Full/Diff backup nöqtəsinə qayıtmaq mümkündür.
-  - **Bulk-Logged**: `SELECT INTO`, `bcp`, indeks yenidənqurmaları minimal loqlanır.
+
+SQL Server-də məlumatların fiziki və məntiqi saxlanma vahidləri bir neçə qatdan ibarətdir:
+
+| Saxlama / Yaddaş Vahidi | Növü | Təyinatı və Daxili Strukturu | İstehsalat (Production) Qaydası |
+| :--- | :--- | :--- | :--- |
+| **Data Page (8 KB)** | Disk | Əsas I/O vahidi. 96 bayt başlıq, 8060 bayt məlumat və sətir ofset yuvalarından ibarətdir. | Sətir 8060 baytı keçdikdə `LOB_DATA` səhifələrinə çıxarılır. |
+| **Extent (64 KB)** | Disk | 8 ədəd ardıcıl səhifədən ibarətdir. *Uniform* (tək obyekt) və *Mixed* (kiçik obyektlər) növləri var. | Böyük cədvəllər sürətli ardıcıl oxuma üçün həmişə Uniform Extent-lərdə saxlanılır. |
+| **Data Files (`.mdf` / `.ndf`)** | Disk | `.mdf` əsas sistem faylı, `.ndf` isə əlavə köməkçi məlumat fayllarıdır. | I/O-nu paralelləşdirmək üçün fərqli fiziki disklərdə Filegroup-lar yaradılır. |
+| **Transaction Log (`.ldf`)** | Disk / Log | Dairəvi (circular) çalışan **Virtual Log Files (VLF)** parçalarından ibarət əməliyyat jurnalı. | Auto-growth sabit addımlarla (məs. 256 MB və ya 512 MB) qoyulmalıdır, yoxsa minlərlə xırda VLF performansı çökdürür. |
+| **Buffer Pool** | RAM | Data Cache (səhifələr) və Plan Cache (icra planları) üçün ayrılan əsas operativ yaddaş. | `max server memory` düzgün limitlənməlidir ki, Əməliyyat Sisteminə ən azı 4–8 GB sərbəst RAM qalsın. |
+| **`tempdb`** | Sistem DB | Müvəqqəti cədvəllər (`#temp`), aralıq çeşidləmələr (`SORT`), Version Store üçün ortaq baza. | Disk rəqabətini (PFS/GAM contention) aradan qaldırmaq üçün nüvə sayına uyğun (maks. 8) bərabər həcmli data faylı açılmalıdır. |
+
+#### Recovery Models (Bərpa Modelləri)
+
+| Bərpa Modeli | Loqlama Səviyyəsi | Point-in-Time Recovery? | Qeyd və Risk |
+| :--- | :--- | :---: | :--- |
+| **Full** | Bütün əməliyyatlar tam qeyd olunur. | **Bəli** | İstehsalatın standartıdır. Müntəzəm Log Backup edilməsə, LDF faylı diski tam doldurar. |
+| **Simple** | Checkpoint keçən kimi inaktiv loqlar təmizlənir. | Xeyr | Yalnız son Full/Diff backup anına qayıtmaq mümkündür. Test mühitləri üçün uyğundur. |
+| **Bulk-Logged** | Kütləvi yükləmələr (`bcp`, `SELECT INTO`) minimal loqlanır. | Məhdud | Gecə ETL yükləmələrində log faylını qorumaq üçün keçici istifadə olunur. |
 
 ---
 
-### 2.2. T-SQL Proqramlaşdırma Obyektləri
-- **Stored Procedures vs Functions vs Views vs Triggers**:
-  - `Stored Procedure`: DML və DDL icra edə bilər, tranzaksiyaları idarə edir (`BEGIN TRAN/COMMIT`), çıxış parametrləri (`OUTPUT`) qaytara bilər, icra planı keşlənir.
-  - `Scalar User-Defined Function (UDF)`: Tək dəyər qaytarır. `WHERE` və ya `SELECT` daxilində çağırıldıqda hər bir sətir üçün tək-tək icra olunur (**Row-by-Row RBAR**) və paralelliyi (`Parallel Execution`) bloklayır! SQL Server 2019-a qədər UDF-lər ən böyük gizli performans qatilidir.
-  - `Inline Table-Valued Function (iTVF)`: Tək bir `SELECT` ilə cədvəl qaytarır. Optimizer onu əsas sorğuya `JOIN` kimi daxil edir (çox sürətlidir).
-  - `Multi-Statement TVF (mSTVF)`: Daxilində müvəqqəti cədvəl yaradıb doldurur; optimizer sətir sayını dəqiq təxmin edə bilmədiyi üçün çox vaxt zəif plan seçir.
-  - `Views`: Yalnız yadda saxlanılmış `SELECT` sorğusudur. Əgər üzərində unikal Clustered Index yaradılarsa, fiziki olaraq diskdə saxlanılır (**Indexed / Materialized View**).
-  - `Triggers`: `AFTER` və `INSTEAD OF` tranzaksiya hadisələrinə cavab verir. `inserted` və `deleted` virtual cədvəllərindən istifadə edir. Ağır ETL axınlarında arxa planda gizli gecikmələrə səbəb olduğu üçün ehtiyatla işlədilməlidir.
+### 2.2. T-SQL Proqramlaşdırma Obyektlərinin Müqayisəsi
+
+| Obyekt Növü | Tranzaksiya & DDL Dəstəyi | Çıxış Növü | İcra Planı və Performans Xüsusiyyəti |
+| :--- | :--- | :--- | :--- |
+| **Stored Procedure** | Bəli (`BEGIN TRAN`, `COMMIT`, `CREATE`) | Çoxlu nəticə dəsti, `OUTPUT` parametri | İcra planı keşlənir; biznes məntiqi və ETL üçün ən etibarlı vasitədir. |
+| **Scalar UDF** | Xeyr | Tək bir skalyar dəyər | **RBAR (Row-By-Row) Tələsi!** Hər sətir üçün tək-tək çağırılır, paralelliyi dondurur. |
+| **Inline TVF (iTVF)** | Xeyr | Cədvəl (`TABLE`) | Əsas sorğuya `JOIN` kimi daxil olur; optimizer tərəfindən tam optimallaşdırılır (çox sürətlidir). |
+| **Multi-Statement TVF**| Xeyr | Daxili müvəqqəti cədvəl | Daxildə cədvəl dəyişəni açır; statistikası olmadığı üçün optimizer çox vaxt səhv plan seçir. |
+| **Indexed View** | Xeyr | Fiziki cədvəl | Üzərində unikal Clustered Index yaradıldıqda diskdə saxlanılır; ağır aqreqasiyaları sürətləndirir. |
 
 ---
 
-### 2.3. Tempdb Strukturları: Temp Tables vs Table Variables vs CTE
-- **CTE (`WITH ...`)**: Yaddaşda və ya `tempdb`-də heç bir fiziki cədvəl yaratmır. Sadəcə sorğunu vizual oxunaqlı edir; əsas sorğu ilə birlikdə optimallaşdırılır.
-- **Local Temp Table (`#Temp`)**:
-  - `tempdb`-də fiziki cədvəl kimi yaranır.
-  - Üzərində statistika (Statistics) toplanır və indekslər yaradıla bilər.
-  - Böyük həcmli məlumatlar (1000+ sətir) üçün mütləq `#Temp` seçilməlidir, çünki optimizer real sətir sayını bilərək düzgün `Hash Join` və ya `Merge Join` seçir.
-- **Table Variable (`@Table`)**:
-  - `DECLARE @t TABLE (...)` ilə yaranır.
-  - Yalnız yaddaşda qalmır — həcmi artdıqda yenə `tempdb`-yə yazılır!
-  - Üzərində statistika yaradılmır; SQL Server (SQL 2019-cu ilə qədər) həmişə onun cəmi **1 sətir** olduğunu fərz edir (**Fixed 1-Row Estimate**). Əgər daxilində 500,000 sətir varsa, optimizer yanlışlıqla `Nested Loops` seçəcək və sorğu saatlarla ilişib qalacaq.
-  - İstifadəçi tranzaksiyasının `ROLLBACK` əmri table variable daxilindəki məlumatı geri qaytarmır!
+### 2.3. Tempdb Resursları: Temp Tables vs Table Variables vs CTE
+
+| Xüsusiyyət | Common Table Expression (CTE) | Temp Table (`#Temp`) | Table Variable (`@Table`) |
+| :--- | :--- | :--- | :--- |
+| **Fiziki Məkan** | Yalnız yaddaşda məntiqi təsvir | `tempdb`-də fiziki cədvəl | `tempdb`-də fiziki struktur |
+| **Statistika (Statistics)** | Yoxdur (Əsas sorğu ilə birləşir) | **Tam statistika toplanır** | **Statistika yoxdur** (Standart 1 sətir fərz edilir) |
+| **İndeksləmə** | Mümkün deyil | Müstəqil indekslər yaradıla bilər | Yalnız ilkin açar / unikal məhdudiyyət |
+| **Tranzaksiya `ROLLBACK`** | Əsas tranzaksiyadan asılıdır | Tranzaksiya geri çəkildikdə ləğv edilir | **Geri qayıtmır** (`ROLLBACK`-dən təsirlənmir) |
+| **Tövsiyə Olunan Həcm** | Qısa, oxunaqlı təkrar istifadə | Böyük həcmlər (1000+ sətir) | Yalnız çox kiçik lüğətlər (< 100 sətir) |
 
 ---
 
-### 2.4. İndekslər, İcra Planları və Statistika
-- **Clustered Index**: Cədvəlin sətirlərini B-Tree-nin ən aşağı yarpaq (Leaf) səviyyəsində fiziki ardıcıllıqla saxlayır. Cədvəldə yalnız 1 dənə ola bilər. Əgər Clustered Index yoxdursa, cədvəl **Heap** (xaotik yığın) adlanır.
-- **Non-Clustered Index**: Açar dəyərini və həmin sətrin fiziki ünvanını (Clustered Index varsa Clustering Key-i, yoxdursa RID - Row ID) saxlayır.
-- **Covering Index və `INCLUDE` Klauzulası**:
-  - Əgər sorğu indeksdə olmayan sütunları da istəyirsə, SQL Server hər sətir üçün əsas cədvələ gedib əlavə oxuma etməlidir (**Key Lookup**).
-  - `CREATE NONCLUSTERED INDEX ... INCLUDE (ColA, ColB)` yazdıqda, həmin sütunlar indeksin aralıq B-Tree səviyyələrinə deyil, yalnız ən aşağı yarpaq səviyyəsinə əlavə olunur. B-Tree şişmir, amma sorğu bütün məlumatı indeksdən tapır və Key Lookup **0-a enir**!
-- **Execution Plans (İcra Planları)**:
-  - Əsas operatorlar: `Index Seek` (dəqiq tapma - ən yaxşı), `Index Scan` (indeksin hamısını oxuma), `Table Scan` (Heap-in hamısını oxuma), `Key Lookup` (əsas cədvələ əlavə I/O sorğusu).
-  - Join növləri: `Nested Loops` (bir tərəf kiçik, digər tərəf indeksli olanda əla), `Hash Match` (böyük indekslənməmiş cədvəllər üçün), `Merge Join` (hər iki tərəf artıq sıralı olanda ən sürətli).
-- **Statistika və Parameter Sniffing**:
-  - Statistika cədvəldəki məlumatların paylanma histoqramıdır (Histogram - ən çox 200 addım).
-  - **Parameter Sniffing**: Stored Procedure ilk dəfə çağırıldıqda ötürülən parametrə görə plan tərtib olunur və keşə atılır. Məsələn: `@Status = 'Cancelled'` cəmi 5 sətir gətirir və `Index Seek + Nested Loops` planı keşlənir. Növbəti dəfə `@Status = 'Active'` ilə çağırılanda (3 milyon sətir) eyni Nested Loops planı işləyir və sistem tamamilə donur!
+### 2.4. İndekslər, İcra Planları və Parameter Sniffing
+
+#### İndeks Mexanizmləri
+- **Clustered Index:** Cədvəlin sətirlərini B-Tree-nin ən aşağı yarpaq (Leaf) səviyyəsində fiziki ardıcıllıqla saxlayır. Cədvəldə yalnız 1 dənə ola bilər. Əgər Clustered Index yoxdursa, cədvəl **Heap** (xaotik yığın) adlanır.
+- **Non-Clustered Index:** Açar dəyərini və həmin sətrin fiziki ünvanını (Clustered Index varsa Clustering Key-i, yoxdursa RID - Row ID) saxlayır.
+- **Covering Index və `INCLUDE` Klauzulası:** Əgər sorğu indeksdə olmayan sütunları da tələb edirsə, SQL Server hər sətir üçün əsas cədvələ gedib əlavə oxuma etməlidir (**Key Lookup**). Əlavə sütunlar `INCLUDE (ColA, ColB)` ilə indeksin yarpaq səviyyəsinə qoyulur; B-Tree dərinləşmir, lakin Key Lookup **0-a enir**.
+
+#### Execution Plan (İcra Planı) Əsas Operatorları
+- **Index Seek:** B-Tree ağacından birbaşa hədəf sətirləri tapır (ən effektiv operator).
+- **Index Scan:** Bütün indeks ağacını başdan-ayağa oxuyur.
+- **Key Lookup:** Qeyri-klaster indeksdən sonra çatışmayan sütunlar üçün əsas cədvələ əlavə I/O müraciətidir.
+- **Nested Loops:** Bir tərəf kiçik, digər tərəf indeksli olanda sürətlidir.
+- **Hash Match:** Böyük indekslənməmiş cədvəllərin `tempdb`/RAM keşində birləşdirilməsidir.
+
+#### Parameter Sniffing Problemi
+Stored Procedure ilk dəfə çağırıldıqda ötürülən parametrə görə icra planı tərtib olunur və keşə atılır. Əgər `@Status = 'Cancelled'` parametri cəmi 5 sətir gətirirsə və `Nested Loops` planı keşlənirsə, növbəti dəfə `@Status = 'Active'` parametri ilə çağırılanda (3 milyon sətir) eyni Nested Loops planı işləyir və server iflic olur.
 
 ---
 
-### 2.5. Diaqnostika Alətləri: Query Store, DMV-lər və Wait Stats
-- **Query Store**: SQL Server-in "qara qutusudur" (Flight Data Recorder). İcra planlarının tarixçəsini, icra müddətini və resurs sərfiyyatını avtomatik qeyd edir. Plan reqresiyası baş verəndə köhnə yaxşı planı tək kliklə məcbur etmək (`Force Plan`) mümkündür.
-- **Ən Vacib DMV-lər (Dynamic Management Views)**:
-  - `sys.dm_exec_query_stats`: Ən çox CPU, I/O və vaxt xərcləyən sorğuların statistikası.
-  - `sys.dm_db_index_usage_stats`: Hansı indekslərin işlədiyini, hansıların isə heç oxunmadığı halda yalnız `UPDATE/INSERT` zamanı sistemi ləngitdiyini göstərir.
-  - `sys.dm_db_missing_index_details`: SQL Server-in özünün təklif etdiyi çatışmayan indekslər.
-  - `sys.dm_os_wait_stats`: Sistemin ən çox nəyi gözlədiyini göstərən server səviyyəli statistika:
-    - `PAGEIOLATCH_SH`: Məlumat səhifəsi diskdən RAM-a gətirilərkən gözləmə (Disk I/O darboğazı və ya Buffer Pool çatışmazlığı).
-    - `CXPACKET` / `CXCONSUMER`: Sorğunun paralel axınları (Parallelism) arasında gözləmə (`MAXDOP` və ya `Cost Threshold for Parallelism` tənzimlənməlidir).
-    - `LCK_M_...`: Tranzaksiyaların kilid gözləməsi (Bloklanma).
-    - `WRITELOG`: Transaction Log-un (LDF) diskə yazılma gecikməsi.
-- **SQL Agent, Linked Servers və SSIS**:
-  - `SQL Server Agent`: Dövri ETL tapşırıqlarını (Jobs), backup-ları və monitorinq xəbərdarlıqlarını cədvəl üzrə işlədən xidmət.
-  - `Linked Server`: SQL Server-dən başqa serverlərə (məsələn Oracle və ya digər MSSQL) qoşulmaq mexanizmi. Böyük cədvəllərdə uzaq serverdən bütün sətirləri çəkməmək üçün dörd hissəli ad (`Server.DB.Schema.Table`) əvəzinə mütləq `OPENQUERY()` ilə filtrli sorğu göndərilməlidir!
-  - `SSIS (SQL Server Integration Services)`: Ənənəvi ETL aləti; `Data Flow Task` (in-memory buffer ilə transformasiya) və `Control Flow Task` (iş axınının ardıcıllığı).
+### 2.5. Diaqnostika: Query Store, DMV-lər və Wait Stats
+
+#### Ən Vacib DMV-lər (Dynamic Management Views)
+- `sys.dm_exec_query_stats`: Ən çox CPU, I/O və icra vaxtı xərcləyən sorğuların statistikası.
+- `sys.dm_db_index_usage_stats`: Hansı indekslərin oxunduğunu, hansıların isə yalnız yazma əməliyyatında yük yaratdığını göstərir.
+- `sys.dm_db_missing_index_details`: SQL Server-in özünün təklif etdiyi çatışmayan indekslər.
+
+#### Əsas Wait Statistikaları (`sys.dm_os_wait_stats`)
+- `PAGEIOLATCH_SH`: Məlumat səhifəsinin diskdən RAM-a gətirilməsini gözləmə (Disk darboğazı və ya Buffer Pool çatışmazlığı).
+- `CXPACKET` / `CXCONSUMER`: Sorğunun paralel axınları arasında gözləmə (`MAXDOP` tənzimlənməlidir).
+- `LCK_M_...`: Tranzaksiyaların kilid gözləməsi (Bloklanma).
+- `WRITELOG`: Transaction Log-un (LDF) diskə yazılma gecikməsi.
 
 ---
 
@@ -192,15 +198,17 @@ ORDER BY ObjectType, ReferencingObject;
 ## 4. Tez-tez edilən səhvlər
 
 > [!WARNING]
-> **Diqqət: Parameter Sniffing Fəlakəti və Yanlış Həllər**
-> Çox vaxt tərtibatçılar bütün prosedura `WITH RECOMPILE` əlavə edirlər. Bu zaman hər bir çağırışda CPU icra planını yenidən hesablayır və yüksək sorğu yükü altında CPU 100%-ə çatır. **Düzgün yanaşma:** 
+> **Parameter Sniffing Fəlakəti və Yanlış Həllər**
+> Çox vaxt tərtibatçılar bütün prosedura `WITH RECOMPILE` əlavə edirlər. Bu zaman hər bir çağırışda CPU icra planını yenidən hesablayır və yüksək sorğu yükü altında CPU 100%-ə çatır.
+> **Düzgün yanaşma:** 
 > 1) Əgər məlumat həddindən artıq qeyri-bərabər paylanıbsa, yalnız həmin sorğuya `OPTION (RECOMPILE)` vermək.
 > 2) Və ya `OPTIMIZE FOR (@Status = 'Active')` / `OPTIMIZE FOR UNKNOWN` istifadə etmək.
 > 3) Parametri prosedur daxilində yerli dəyişənə mənimsətmək (`DECLARE @LocalStatus = @Status; WHERE Status = @LocalStatus`).
 
 > [!NOTE]
-> **Qeyd: Linked Server üzərində filtrsiz dörd hissəli sorğu göndərmək**
-> `SELECT * FROM [RemoteServer].[InsuranceDB].[dbo].[Claims] WHERE ClaimDate >= '2026-01-01'` yazdıqda, SQL Server çox vaxt uzaq serverdəki **bütün cədvəli** şəbəkə ilə yerli serverə çəkir və filtri burada tətbiq edir! Həll: Mütləq `OPENQUERY` istifadə edərək filtri uzaq serverdə icra etmək:
+> **Linked Server Üzərində Filtrsiz Dörd Hissəli Sorğu Göndərmək**
+> `SELECT * FROM [RemoteServer].[InsuranceDB].[dbo].[Claims] WHERE ClaimDate >= '2026-01-01'` yazdıqda, SQL Server çox vaxt uzaq serverdəki **bütün cədvəli** şəbəkə ilə yerli serverə çəkir və filtri burada tətbiq edir!
+> **Düzgün həll:** Mütləq `OPENQUERY` istifadə edərək filtri uzaq serverdə icra etmək:
 > `SELECT * FROM OPENQUERY([RemoteServer], 'SELECT * FROM InsuranceDB.dbo.Claims WHERE ClaimDate >= ''2026-01-01''')`.
 
 ---
