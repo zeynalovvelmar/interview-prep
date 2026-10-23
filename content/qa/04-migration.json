@@ -1,0 +1,194 @@
+[
+  {
+    "id": "qa-mig-01",
+    "category": "Migration",
+    "difficulty": "Medium",
+    "question": "SQL Server-dən PostgreSQL-ə miqrasiya zamanı əsas data tiplərinin uyğunlaşdırılması (data type mapping) necə aparılır?",
+    "answer": "SQL Server və PostgreSQL arasında tipləri köçürərkən birbaşa 1:1 uyğunluq olmayan tiplərə xüsusi diqqət yetirilir. Məsələn, SQL Server-dəki 'DATETIME2' tipi PostgreSQL-də saat qurşağını nəzərə alan 'TIMESTAMPTZ' (və ya 'TIMESTAMP') ilə əvəz edilir. 'NVARCHAR(n)' tipi PostgreSQL-də adətən birbaşa 'TEXT' və ya 'VARCHAR(n)' kimi saxlanılır, çünki Postgres-də string tipləri onsuz da UTF-8 kodlaşdırması ilə işləyir. SQL Server-in 'BIT' (0/1) tipi PostgreSQL-də 'BOOLEAN' (TRUE/FALSE) tipinə çevrilir. Dəqiqlik tələb edən valyuta və məbləğlər üçün isə 'MONEY' yerinə hər iki tərəfdə 'NUMERIC/DECIMAL' tövsiyə edilir.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- PostgreSQL tərəfində tip uyğunlaşdırma nümunəsi\nCREATE TABLE core.dim_policy (\n    policy_id      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- T-SQL: BIGINT IDENTITY(1,1)\n    policy_number  VARCHAR(50) NOT NULL,                           -- T-SQL: NVARCHAR(50)\n    premium_amount NUMERIC(12, 2) NOT NULL,                        -- T-SQL: DECIMAL(12, 2)\n    is_active      BOOLEAN NOT NULL DEFAULT TRUE,                  -- T-SQL: BIT DEFAULT 1\n    created_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP  -- T-SQL: DATETIME2 DEFAULT SYSDATETIME()\n);"
+    },
+    "followUps": [
+      "SQL Server-in UNIQUEIDENTIFIER tipi PostgreSQL-də nəyə çevrilir (UUID)?",
+      "VARBINARY(MAX) tipi PostgreSQL-də nəyə uyğun gəlir (BYTEA)?"
+    ]
+  },
+  {
+    "id": "qa-mig-02",
+    "category": "Migration",
+    "difficulty": "Easy",
+    "question": "T-SQL və PL/pgSQL arasında ən çox rast gəlinən təməl sintaksis fərqləri hansılardır?",
+    "answer": "Təməl sorğularda ən bariz fərq sətir sayını məhdudlaşdırmaqdır: T-SQL 'SELECT TOP (n)' yazarkən, PostgreSQL sorğunun sonunda 'LIMIT n' istifadə edir. NULL dəyərləri əvəzləmək üçün T-SQL-dəki xüsusi 'ISNULL()' funksiyası əvəzinə PostgreSQL-də ANSI standartı olan 'COALESCE()' işlədilir. Cari vaxt üçün T-SQL 'SYSDATETIME()' və ya 'GETDATE()' istifadə etdiyi halda, Postgres 'CURRENT_TIMESTAMP' və ya 'now()' qəbul edir. Həmçinin simvolların birləşdirilməsi T-SQL-də '+' operatoru ilə, PostgreSQL-də isə standart '||' və ya 'CONCAT()' ilə edilir.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- PostgreSQL standart sintaksis:\nSELECT \n    policy_id,\n    COALESCE(description, 'Məlumat yoxdur') AS notes,\n    CURRENT_TIMESTAMP AS checked_at\nFROM core.dim_policy\nORDER BY policy_id DESC\nLIMIT 10;"
+    },
+    "followUps": [
+      "ISNULL və COALESCE arasında data type precedence baxımından hansı fərq var?",
+      "OFFSET və FETCH NEXT sintaksisi hər iki sistemdə işləyirmi?"
+    ]
+  },
+  {
+    "id": "qa-mig-03",
+    "category": "Migration",
+    "difficulty": "Medium",
+    "question": "Big-Bang miqrasiya ilə Phased (mərhələli) miqrasiya arasındakı fərq və risklər nələrdir?",
+    "answer": "Big-Bang miqrasiyada bütün sistem və məlumatlar müəyyən bir pəncərədə (məsələn, həftəsonu gecə) birdəfəlik köhnə bazadan yenisinə keçirilir; üstünlüyü sadə arxitektura olmasıdır, lakin nasazlıq olarsa dayanma müddəti (downtime) və biznes riski çox yüksəkdir. Phased (mərhələli) miqrasiyada isə sistem modul-modul və ya servis-servis (məsələn, əvvəlcə hesabat bazası, sonra analitika, ən sonda əsas tranzaksiya sistemi) köçürülür. Phased yanaşmada risk az olur və geri qayıtmaq asandır, lakin iki sistem arasında müvəqqəti məlumat sinxronizasiyası (dual-write və ya CDC) qurmaq tələb olunur.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Miqrasiya yanaşması seçimi:\n-- Kiçik/orta analitik bazalar: Big-Bang (planlı 4-6 saatlıq downtime)\n-- 24/7 sığorta tranzaksiya sistemləri: Phased + CDC sinxronizasiyası"
+    },
+    "followUps": [
+      "Dual-write zamanı yarana biləcək split-brain və ya data inconsistency problemlərini necə həll edirlər?",
+      "Canlı sistemlərdə cutover müddətini minimuma endirmək üçün hansı alətlərdən istifadə olunur?"
+    ]
+  },
+  {
+    "id": "qa-mig-04",
+    "category": "Migration",
+    "difficulty": "Hard",
+    "question": "CDC (Change Data Capture) miqrasiyada nə üçün lazımdır və o necə işləyir?",
+    "answer": "Böyük həcmli məlumat bazalarını sıfır və ya minimal dayanma müddəti (near-zero downtime) ilə miqrasiya etmək üçün CDC zəruridir. Əsas prinsip odur ki, ilkin böyük həcm (initial snapshot) köçürülərkən mənbə bazada baş verən yeni INSERT, UPDATE və DELETE əməliyyatları birbaşa tranzaksiya loqlarından (SQL Server LSN / Postgres WAL) oxunur. Məsələn, Debezium bu dəyişiklikləri tutub Kafka mövzusuna ötürür, oradan da hədəf PostgreSQL bazasına tətbiq edilir. İlkin kütləvi yükləmə və axın çatdıqda (lag sıfırlandıqda) cəmi bir neçə dəqiqəlik kəsimlə (cutover) sistem yeni bazaya yönləndirilir.",
+    "code": {
+      "language": "sql",
+      "dialect": "T-SQL",
+      "snippet": "-- SQL Server tərəfində CDC-nin aktiv edilməsi (T-SQL):\nEXEC sys.sp_cdc_enable_db;\nGO\n\nEXEC sys.sp_cdc_enable_table\n    @source_schema = N'dbo',\n    @source_name   = N'Policies',\n    @role_name     = NULL,\n    @supports_net_changes = 1;\nGO"
+    },
+    "followUps": [
+      "CDC ilə adi replication (məsələn, Snapshot Replication) arasındakı fərq nədir?",
+      "CDC aktiv olduqda transaction log faylının şişməməsi üçün nəyə nəzarət edilməlidir?"
+    ]
+  },
+  {
+    "id": "qa-mig-05",
+    "category": "Migration",
+    "difficulty": "Medium",
+    "question": "T-SQL-dəki MERGE ifadəsi PostgreSQL-ə necə çevrilir?",
+    "answer": "SQL Server-də həm INSERT, həm də UPDATE əməliyyatını tək sorğuda etmək üçün 'MERGE target USING source' istifadə olunur. PostgreSQL-də (versiya 15-ə qədər MERGE yox idi) və müasir Postgres standartında bu məqsədlə ən etibarlı və geniş yayılmış konstruksiya 'INSERT ... ON CONFLICT (key) DO UPDATE' (Upsert) sintaksisidir. Bu konstruksiya unikal açar və ya ilkin açar toqquşması olduqda göstərilən sütunları 'EXCLUDED.column' vasitəsilə yeniləyir. Bu üsul T-SQL MERGE-də tez-tez rast gəlinən concurrency və locking problemlərindən daha qorunmuşdur.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- PostgreSQL-də Upsert (ON CONFLICT DO UPDATE):\nINSERT INTO core.dim_customer (customer_id, full_name, phone, updated_at)\nVALUES (101, 'Elmar Qasımov', '+994501234567', CURRENT_TIMESTAMP)\nON CONFLICT (customer_id) \nDO UPDATE SET \n    full_name = EXCLUDED.full_name,\n    phone = EXCLUDED.phone,\n    updated_at = EXCLUDED.updated_at;"
+    },
+    "followUps": [
+      "PostgreSQL 15+ versiyasında gələn MERGE sintaksisini nə vaxt üstün tutarsan?",
+      "ON CONFLICT DO NOTHING nə edir?"
+    ]
+  },
+  {
+    "id": "qa-mig-06",
+    "category": "Migration",
+    "difficulty": "Medium",
+    "question": "T-SQL OUTPUT klauzulasi PostgreSQL-də nə ilə əvəz olunur və necə işləyir?",
+    "answer": "SQL Server-də INSERT, UPDATE və ya DELETE zamanı dəyişən və ya avtomatik artan sətirləri almaq üçün 'OUTPUT inserted.* / deleted.*' yazılır. PostgreSQL-də bunun birbaşa və daha təbii qarşılığı 'RETURNING' klauzulasiyadır. Məsələn, PostgreSQL-də yeni müştəri və ya polis əlavə edərkən avtomatik generasiya olunmuş id və ya standart dəyərləri dərhal qaytarmaq üçün sorğunun sonuna 'RETURNING customer_id, created_at' əlavə etmək kifayətdir. Bu, xüsusilə ETL proseslərində və tətbiq səviyyəsində əlavə SELECT sorğularının qarşısını alır.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- PostgreSQL RETURNING klauzulasi:\nINSERT INTO core.dim_policy (policy_number, premium_amount)\nVALUES ('POL-2026-999', 450.00)\nRETURNING policy_id, created_at;"
+    },
+    "followUps": [
+      "PostgreSQL-də UPDATE zamanı köhnə və yeni dəyərləri eyni vaxtda RETURNING ilə qaytarmaq mümkündürmü?",
+      "RETURNING nəticəsini CTE (WITH) daxilində növbəti addıma ötürmək olarmı?"
+    ]
+  },
+  {
+    "id": "qa-mig-07",
+    "category": "Migration",
+    "difficulty": "Medium",
+    "question": "SQL Server və PostgreSQL arasında Collation və Hərf Həssaslığı (Case Sensitivity) fərqi hansı problemləri yaradır?",
+    "answer": "SQL Server-də susmaya görə əksər instansiyalar case-insensitive (məsələn, 'SQL_Latin1_General_CP1_CI_AS') quraşdırılır, yəni 'Elmar' və 'elmar' bərabər sayılır. PostgreSQL isə susmaya görə tamamilə case-sensitive (UTF-8) işləyir, ona görə də birbaşa '=' axtarışında fərqli sətirlər hesab olunur. Miqrasiyadan sonra tətbiq sorğularının xəta verməməsi üçün PostgreSQL-də 'ILIKE' operatorundan, 'LOWER()' funksiyasından və ya 'citext' (case-insensitive text) genişlənməsindən istifadə olunur. Həmçinin cədvəl və sütun adlarında dırnaq işarəsi qoyulmadıqda Postgres onları kiçik hərfə (lowercase) çevirir.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- Case-insensitive axtarış üsulları:\n-- 1. ILIKE istifadəsi\nSELECT * FROM core.dim_customer WHERE full_name ILIKE '%elmar%';\n\n-- 2. citext modulu ilə avtomatik keys-həssas olmayan sütun:\n-- CREATE EXTENSION IF NOT EXISTS citext;\n-- CREATE TABLE users (email CITEXT UNIQUE);"
+    },
+    "followUps": [
+      "PostgreSQL-də sütun adını böyük hərflə yazmaq (CamelCase) niyə məsləhət deyil?",
+      "LOWER(col) istifadə edərkən indeksdən yararlanmaq üçün hansı indeks növü yaradılmalıdır (Expression Index)?"
+    ]
+  },
+  {
+    "id": "qa-mig-08",
+    "category": "Migration",
+    "difficulty": "Hard",
+    "question": "Miqrasiya zamanı data validasiyası (məlumatların tamlığının yoxlanması) hansı səviyyələrdə aparılır?",
+    "answer": "Məlumatların düzgün və itkisiz köçürüldüyünə əmin olmaq üçün validasiya üç əsas mərhələdə aparılır. Birinci mərhələ 'Row count' yoxlanışıdır: hər iki tərəfdə cədvəllərin və bölmələrin (partitions) ümumi sətir sayı müqayisə edilir. İkinci mərhələ 'Checksum / Hash' yoxlanışıdır: sətirlərin və ya aqreqatların MD5/SHA256 heş dəyərləri hesablanaraq sütunların uyğunluğu dəqiqləşdirilir. Üçüncü mərhələ isə 'Random Sampling' və biznes qaydalarıdır: təsadüfi seçilmiş sətirlər və maliyyə yekunları (məsələn, ümumi sığorta mükafatları cəmi) hər iki bazada qəpik-qəpiyinə tutuşdurulur.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- Məbləğ və sətir sayı validasiyası:\nSELECT \n    COUNT(*) AS total_policies,\n    SUM(premium_amount) AS total_premium,\n    MIN(created_at) AS min_date,\n    MAX(created_at) AS max_date\nFROM core.dim_policy;"
+    },
+    "followUps": [
+      "Böyük cədvəllərdə bütün cədvəlin CHECKSUM-unu hesablamaq niyə çox resurs apara bilər?",
+      "Data tipləri dəyişdikdə (məsələn, float-dan numeric-ə) checksum fərqliliyini necə idarə edirlər?"
+    ]
+  },
+  {
+    "id": "qa-mig-09",
+    "category": "Migration",
+    "difficulty": "Hard",
+    "question": "Cutover plan nədir və uğursuzluq halında Rollback (əvvəlki vəziyyətə qayıdış) strategiyası necə hazırlanır?",
+    "answer": "Cutover plan — köhnə sistemdən yeni sistemə keçidin saatbasaat və dəqiqəbəbədəqiqə icra xəritəsidir; buraya mənbə sistemin 'read-only' rejiminə salınması, son CDC delta sinxronizasiyası, validasiya skriptlərinin icrası və tətbiqlərin connection string-lərinin dəyişdirilməsi daxildir. Rollback strategiyası isə hər bir addımda 'No-Go' qərarı verilərsə nə ediləcəyini göstərən təcili fəaliyyət planıdır. Ən etibarlı rollback üçün 'Reverse CDC' tətbiq olunur: yəni cutover-dən sonra müəyyən müddət PostgreSQL-də yaranan yeni dəyişikliklər geri SQL Server-ə replikasiya edilir ki, problem çıxsa sıfır itki ilə köhnə bazaya qayıtmaq mümkün olsun.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Cutover Checklist Əsas Addımları:\n-- 1. SQL Server: ALTER DATABASE [DB] SET READ_ONLY WITH ROLLBACK IMMEDIATE;\n-- 2. CDC lag = 0 olduğunu təsdiqlə\n-- 3. Validation queries icra et\n-- 4. App connection string -> PostgreSQL\n-- 5. Smoke testlər uğurlu olarsa GO, əks halda ROLLBACK"
+    },
+    "followUps": [
+      "Point of No Return (geri qayıdışın mümkün olmadığı nöqtə) nə vaxt baş verir?",
+      "Dry-run (məşq) miqrasiyası cutover risklərini necə azaldır?"
+    ]
+  },
+  {
+    "id": "qa-mig-10",
+    "category": "Migration",
+    "difficulty": "Easy",
+    "question": "SQL Server-dəki IDENTITY sütunları PostgreSQL-ə necə köçürülür və sequence sinxronizasiyası niyə vacibdir?",
+    "answer": "SQL Server-də avtomatik artan açarlar 'IDENTITY(1,1)' kimi təyin olunur. PostgreSQL-də köhnə 'SERIAL' sintaksisi mövcud olsa da, müasir SQL standartına uyğun olan 'GENERATED ALWAYS (və ya BY DEFAULT) AS IDENTITY' sintaksisi ən doğru seçimdir. Miqrasiya zamanı mövcud məlumatlar ID dəyərləri ilə birlikdə köçürüldükdən sonra mütləq arxa plandakı SEQUENCE sayğacının cari maksimum ID-yə sinxronizasiyası ('setval') edilməlidir. Əks halda yeni INSERT zamanı bazada açar toqquşması (Primary Key duplicate key violation) baş verəcək.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- Miqrasiyadan dərhal sonra sayğacın maksimum dəyərə bərabərləşdirilməsi:\nSELECT setval(\n    pg_get_serial_sequence('core.dim_policy', 'policy_id'),\n    COALESCE(MAX(policy_id), 1)\n) FROM core.dim_policy;"
+    },
+    "followUps": [
+      "GENERATED ALWAYS ilə GENERATED BY DEFAULT arasındakı fərq nədir?",
+      "PostgreSQL-də sequence kəşlənməsi (CACHE) performansa necə təsir edir?"
+    ]
+  },
+  {
+    "id": "qa-mig-11",
+    "category": "Migration",
+    "difficulty": "Hard",
+    "question": "SQL Server Stored Procedure və Function-larını PostgreSQL-ə köçürərkən hansı əsas çətinliklər yaranır?",
+    "answer": "Ən böyük çətinlik procedural dil sintaksisi və semantika fərqləridir: T-SQL çox sərbəst blok strukturuna malik olduğu halda, PL/pgSQL ciddi 'DECLARE ... BEGIN ... END;' blokları və dəyişən elanları tələb edir. SQL Server-də prosedur daxilində sadəcə 'SELECT col1, col2' yazmaqla müştəriyə birbaşa result set qaytarmaq mümkün olduğu halda, PostgreSQL-də bunun üçün 'RETURNS TABLE' və ya 'refcursor' istifadə edilməlidir. Bundan əlavə, tranzaksiya idarəsi (T-SQL COMMIT/ROLLBACK məntiqi köhnə Postgres funksiyalarında qadağan idi, yalnız Postgres 11+ prosedurlarında dəstəklənir) və müvəqqəti cədvəllərin (#temp vs TEMPORARY) davranışı tamamilə yenidən yazılma tələb edir.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- PostgreSQL funksiya/prosedur strukturu:\nCREATE OR REPLACE FUNCTION core.fn_calc_discount(p_premium NUMERIC, p_claims INT)\nRETURNS NUMERIC\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_discount NUMERIC := 0;\nBEGIN\n    IF p_claims = 0 THEN\n        v_discount := p_premium * 0.15; -- 15% endirim\n    END IF;\n    RETURN v_discount;\nEND;\n$$;"
+    },
+    "followUps": [
+      "SQL Server-dən prosedurları avtomatlaşdırılmış çevirmək üçün hansı alətlər mövcuddur (ora2pg, AWS SCT)?",
+      "PostgreSQL-də procedur və function arasındakı fərq nədir?"
+    ]
+  },
+  {
+    "id": "qa-mig-12",
+    "category": "Migration",
+    "difficulty": "Medium",
+    "question": "Junior Data Mühəndisi olaraq sənə SQL Server-dən PostgreSQL-ə miqrasiya tapşırılsa, şəxsi yanaşman və ilk addımların necə olar?",
+    "answer": "İstehsalat (production) mühitində təkbaşına böyük bir müəssisə miqrasiyası idarə etməmişəm, lakin strukturlaşdırılmış yanaşmanı və prinsipləri dərindən öyrənmişəm. İlk addımım mövcud bazanın inventarını çıxarmaq olar: cədvəllərin həcmi, data tipləri, xüsusi T-SQL funksiyaları, triggerlər və asılılıqlar xəritələnir. İkinci addımda data type mapping cədvəli hazırlayıb test mühitində DDL sxemini quraram və kiçik data hissəsi ilə test edərəm. Məlumatın köçürülməsi üçün alətlərdən (məsələn, Python/Airflow skriptləri və ya uyğun miqrasiya aləti) istifadə edib, hər addımdan sonra sətir sayı və heş validasiyası apararam.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Mənim addım-addım yanaşmam:\n-- 1. Sxem analizi və Data type mapping cədvəli tərtibatı\n-- 2. Test mühitində DDL yaradılması və tiplərin yoxlanması\n-- 3. Batch ETL / Script ilə kiçik datanın köçürülməsi və validasiyası\n-- 4. Bütün cədvəllərin köçürülməsi + sətir sayı və aqreqat tutuşdurulması"
+    },
+    "followUps": [
+      "Əgər miqrasiya zamanı hansısa sütunda data itkisi və ya xəta görsən, problemi necə araşdırarsan?",
+      "Biznes komandasına prosesin gedişatı haqqında necə hesabat verərsən?"
+    ]
+  }
+]

@@ -1,0 +1,73 @@
+[
+  {
+    "id": "qa-pg-01",
+    "category": "PostgreSQL",
+    "difficulty": "Medium",
+    "question": "PostgreSQL-in proses modeli necədir və 'shared_buffers' ilə 'work_mem' arasındakı fərq nədir?",
+    "answer": "PostgreSQL SQL Server kimi tək proses daxilində çoxaxınlı (multi-threaded) deyil; hər bir müştəri qoşulması üçün əməliyyat sistemi səviyyəsində ayrıca bir müstəqil proses (Backend Process) yaradır. shared_buffers bütün bu proseslər tərəfindən ortaq istifadə olunan qlobal RAM keşidir (disk səhifələrini saxlayır) və adətən server RAM-ının 25%-i qədər təyin olunur. work_mem isə qlobal deyil; hər bir sorğu daxilindəki hər bir çeşidləmə (ORDER BY, DISTINCT) və ya Hash Join üçün ayrılan fərdi işçi yaddaşdır. Əgər work_mem çox böyük qoyularsa, 50 paralel qoşulma zamanı serverin RAM-ı tam tükənə və OOM (Out of Memory) çöküşü baş verə bilər.",
+    "followUps": [
+      "maintenance_work_mem parametri nə üçün istifadə olunur?",
+      "Connection pooling (məsələn PgBouncer) PostgreSQL üçün niyə zəruridir?"
+    ]
+  },
+  {
+    "id": "qa-pg-02",
+    "category": "PostgreSQL",
+    "difficulty": "Hard",
+    "question": "PostgreSQL-də MVCC (Multi-Version Concurrency Control) mexanizmi necə işləyir?",
+    "answer": "MVCC sayəsində PostgreSQL-də oxuyanlar yazanları, yazanlar isə oxuyanları heç vaxt bloklamır. Bir sətir UPDATE edildikdə, köhnə sətir yerində dəyişdirilmir; onun gizli 'xmax' sahəsinə cari tranzaksiya ID-si yazılaraq ləğv edilmiş kimi qeyd olunur və cədvəlin sonuna yeni dəyərlərlə təzə bir sətir əlavə edilir (onun 'xmin'-i cari tranzaksiya olur). Aktiv tranzaksiyalar bitdikdən sonra həmin köhnə sətir 'Dead Tuple' (ölü sətir) halına gəlir. Nəticədə hər bir tranzaksiya öz snapshot-ına uyğun məlumatı oxuyur, lakin vaxtında təmizlənməzsə cədvəllər diskdə şişir (Table Bloat).",
+    "followUps": [
+      "Transaction ID Wraparound nədir və necə qarşısı alınır?",
+      "HOT (Heap-Only Tuple) optimallaşdırması nədir?"
+    ]
+  },
+  {
+    "id": "qa-pg-03",
+    "category": "PostgreSQL",
+    "difficulty": "Medium",
+    "question": "VACUUM ilə VACUUM FULL arasındakı fərq nədir və canlı sistemdə VACUUM FULL niyə təhlükəlidir?",
+    "answer": "Standart VACUUM arxa planda cədvəli kilidləmədən işləyir; o, ölü sətirlərin yerini 'boş' kimi qeyd edir (Free Space Map) ki, gələcək INSERT-lər həmin yerə yazılsın, lakin diski əməliyyat sisteminə qaytarmır. VACUUM FULL isə bütün cədvəli başdan-ayağa oxuyaraq diskdə yeni kompakt fayla yazır və artıq sahəni əməliyyat sisteminə qaytarır. Lakin VACUUM FULL cədvəli ACCESS EXCLUSIVE kilidinə alır; bu zaman həmin cədvəldən oxuma və yazma tamamilə dayanır. Canlı sığorta sistemində VACUUM FULL saytın və tətbiqlərin donmasına səbəb olduğu üçün əvəzində 'pg_repack' alətindən istifadə olunmalıdır.",
+    "followUps": [
+      "Autovacuum parametrini (autovacuum_vacuum_scale_factor) böyük cədvəllər üçün necə tənzimləmək lazımdır?",
+      "Free Space Map (FSM) və Visibility Map (VM) nədir?"
+    ]
+  },
+  {
+    "id": "qa-pg-04",
+    "category": "PostgreSQL",
+    "difficulty": "Hard",
+    "question": "GIN və BRIN indeks növləri nədir və Data Engineering-də hansı ssenarilərdə seçilir?",
+    "answer": "GIN (Generalized Inverted Index) tərsinə çevrilmiş indeksdir və tək bir xanada çoxlu elementlər saxlanıldıqda istifadə olunur (məsələn: JSONB sənədləri, tam mətn axtarışı və massivlər). BRIN (Block Range Index) isə ardıcıl fiziki səhifələr bloku üçün (məsələn, 128 səhifə) yalnız Minimum və Maximum dəyərləri saxlayan ultra-kompakt indeksdir. Təbii olaraq ardıcıl artan nəhəng sığorta hadisələri və ya loq cədvəllərində (Time-Series) BRIN indeksi B-tree ilə müqayisədə 99% daha az yer tutur (50 GB-lıq indeks əvəzinə 20 MB) və yaddaşı tam qoruyur.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- JSONB üçün GIN indeksi\nCREATE INDEX idx_claims_details ON public.claims USING GIN (details);\n\n-- Tarixi böyük cədvəl üçün BRIN indeksi\nCREATE INDEX idx_claims_date_brin ON public.claims USING BRIN (claim_date);"
+    },
+    "followUps": [
+      "GiST indeksi nə üçün istifadə olunur (PostGIS)?",
+      "Partial Index (Qismən indeks) nədir?"
+    ]
+  },
+  {
+    "id": "qa-pg-05",
+    "category": "PostgreSQL",
+    "difficulty": "Medium",
+    "question": "'EXPLAIN (ANALYZE, BUFFERS)' nəyi göstərir və necə təhlil edilməlidir?",
+    "answer": "EXPLAIN sadəcə planlayıcının nəzəri təxminlərini göstərdiyi halda, 'EXPLAIN (ANALYZE, BUFFERS)' sorğunu həqiqətən icra edir və real icra vaxtını (actual time), real sətir sayını və operativ yaddaş (shared_buffers) istifadəsini göstərir. Nəticədə 'shared hit' göstəricisi məlumatın birbaşa RAM-dan oxunduğunu (ən sürətli), 'shared read' isə disklərdən oxunduğunu (I/O xərci) bildirir. Əgər planlayıcının təxmin etdiyi sətir sayı (rows) ilə real sətir sayı arasında böyük fərq varsa, deməli cədvəlin statistikası köhnəlib və 'ANALYZE table_name' icra olunmalıdır.",
+    "followUps": [
+      "Seq Scan nə vaxt Index Scan-dən daha sürətli ola bilər?",
+      "Bitmap Index Scan ilə Bitmap Heap Scan nədir?"
+    ]
+  },
+  {
+    "id": "qa-pg-06",
+    "category": "PostgreSQL",
+    "difficulty": "Easy",
+    "question": "PostgreSQL-də JSONB nədir və ənənəvi JSON tipindən nə ilə fərqlənir?",
+    "answer": "PostgreSQL-də iki JSON tipi var: mətn formatlı 'JSON' və ikili (binary) parçalanmış 'JSONB'. Düz JSON daxil edilən mətni olduğu kimi saxlayır, yazılma sürəti bir qədər tezdir, lakin hər dəfə oxunanda mətni yenidən parse etmək tələb olunur və indekslənə bilmir. JSONB isə daxil edilərkən boşluqları təmizləyir, açarları çeşidləyir və ikili ağac formatında saxlayır; yazılması bir qədər vaxt aparsa da, oxunması və daxilində axtarış inanılmaz dərəcədə sürətlidir. Ən vacibi odur ki, JSONB tipi GIN indekslərini tam dəstəkləyir və '@>' operatoru ilə saniyənin mində birində daxili sahələri tapmağa imkan verir.",
+    "followUps": [
+      "JSONB daxilində '->' ilə '->>' operatorları arasındakı fərq nədir?",
+      "JSONB_SET funksiyası nə edir?"
+    ]
+  }
+]

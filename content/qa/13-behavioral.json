@@ -1,0 +1,66 @@
+[
+  {
+    "id": "qa-beh-01",
+    "category": "Behavioral",
+    "difficulty": "Easy",
+    "question": "Özün haqqında qısa məlumat ver və niyə məhz Data Engineering sahəsini seçmisən?",
+    "answer": "Mən Elmar, Data Mühəndisliyi sahəsinə böyük maraq göstərən və bu istiqamətdə intensiv praktiki biliklər toplamış gənc mütəxəssisəm. Proqramlaşdırma və SQL-in nəzəriyyəsi ilə kifayətlənməyib, real arxitekturalara yaxın 3 fərqli pet layihə qurmuşam: PySpark və Delta Lake ilə Medallion Lakehouse, Kafka və Airflow ilə real-time kripto axını və Kimball Star sxeminə əsaslanan bank analitikası. Məni Data Engineering-də ən çox cəlb edən cəhət pərdəarxası sistemlərin — xaotik xammal məlumatların dəqiq, dayanıqlı və biznes üçün etibarlı qərarlara çevrilən avtomatlaşdırılmış boru kəmərlərinin mühəndisliyidir. Atəşgah Sığorta kimi zəngin məlumat axını olan bir şirkətdə öyrənməyə və dəyər qatmağa tam hazıram.",
+    "code": {
+      "language": "markdown",
+      "dialect": "General",
+      "snippet": "**Struktur:**\n1. Giriş və profil: Junior Data Engineer (Elmar)\n2. Təcrübə sübutu: Qurduğum 3 əsas layihə (Lakehouse, Kafka Streaming, Kimball DWH)\n3. Niyə DE: Məlumat infrastrukturunu və mühəndislik intizamını sevməyim\n4. Hədəf: Atəşgah Sığorta-da komandaya töhfə vermək və inkişaf etmək"
+    },
+    "followUps": [
+      "Universitet və ya əvvəlki təhsil təcrübən sənin indiki mühəndis düşüncənə necə kömək edir?",
+      "3 il sonra özünü peşəkar olaraq hansı səviyyədə görürsən?"
+    ]
+  },
+  {
+    "id": "qa-beh-02",
+    "category": "Behavioral",
+    "difficulty": "Medium",
+    "question": "Heç vaxt praktiki işləmədiyin bir texnologiya (məsələn, istehsalat MS SQL Server və ya yeni bir miqrasiya aləti) ilə qarşılaşdıqda necə yanaşırsan?",
+    "answer": "Heç vaxt bilmədiyim bir texnologiyanı bildiyimi iddia etmirəm, lakin mənim güclü tərəfim təməl prinsipləri bilmək və çox sürətlə öyrənmək qabiliyyətimdir. Belə bir vəziyyətdə dərhal rəsmi sənədləşmədən (documentation) və ən yaxşı təcrübələrdən başlayıram, konseptual olaraq artıq bildiyim oxşar sistemlərlə (məsələn, PostgreSQL və ya PySpark təcrübəmlə) paralellər aparıram. Daha sonra lokal və ya təcrid olunmuş test mühitində (sandbox) kiçik 'Proof of Concept' prototipləri quraraq riskləri yoxlayıram. Ehtiyac olduqda isə komandadakı böyük mühəndislərə vaxtında, aydın və strukturlaşdırılmış suallarla müraciət edirəm.",
+    "code": {
+      "language": "markdown",
+      "dialect": "General",
+      "snippet": "**Addımlarım:**\n1. Rəsmi sənədləşmə və arxitektura icmalı\n2. Bildiyim texnologiyalarla müqayisəli analiz\n3. Docker/Sandbox mühitində prototip qurub test etmək\n4. Senior həmkarlarla dəqiq suallarla məsləhətləşmək"
+    },
+    "followUps": [
+      "Öyrəndiyin ən çətin texnoloji anlayış nə olub və onu necə mənimsəmisən?",
+      "Köhnə, sənədləşdirilməmiş 'Legacy' kodla qarşılaşsan nə edərsən?"
+    ]
+  },
+  {
+    "id": "qa-beh-03",
+    "category": "Behavioral",
+    "difficulty": "Medium",
+    "question": "Gecə yarısı kritik bir ETL tapşırığı çökərsə və səhər hesabatları təhlükə altına düşərsə, təzyiq altında ilk reaksiyan və addımların nə olar?",
+    "answer": "Təzyiq altında ən vacib prinsip təşvişə düşməmək və strukturlaşdırılmış böhran planı üzrə hərəkət etməkdir. İlk növbədə dərhal əsas maraqlı tərəfləri (komanda rəhbərini və ya növbətçini) problemin baş verməsi barədə qısa məlumatlandırıram ki, gözlənilməz sürpriz olmasın. İkinci addımda Airflow və sistem loqlarını açaraq xətanın kök səbəbini (şəbəkə kəsintisi, disk dolması, NULL constraint pozulması və ya mənbə bazasının dayanması) müəyyən edirəm. Əgər tez həll olunan keçici problemdirsə, idarəolunan təkrari cəhd (retry) edirəm; əgər kök kod xətasıdırsa və vaxt azdırsa, son uğurlu ehtiyat versiyanı bərpa edib biznesin səhər işini təmin edirəm, sonra isə səbəbi aradan qaldırıb post-mortem sənədi yazıram.",
+    "code": {
+      "language": "markdown",
+      "dialect": "General",
+      "snippet": "**Fövqəladə İnsident Protokolu:**\n1. Kommunikasiya: Komandaya dərhal ilkin xəbərdarlıq\n2. Diaqnostika: Log analizi və təsir dairəsinin (blast radius) təyini\n3. Təcili Bərpa: Rollback və ya izolyasiya edilmiş təkrar icra\n4. Analiz: Post-mortem və gələcəkdə təkrarlanmaması üçün alert/qoruma əlavə etmək"
+    },
+    "followUps": [
+      "İnsident zamanı 'Blameless Post-Mortem' (günahlandırmayan retrospektiv) nə üçün vacibdir?",
+      "Gecə insidentlərinin sayını azaltmaq üçün pipeline-da hansı qabaqlayıcı tədbirlər görülməlidir?"
+    ]
+  },
+  {
+    "id": "qa-beh-04",
+    "category": "Behavioral",
+    "difficulty": "Medium",
+    "question": "Biznes analitiki və ya anderrayter ilə tələblər (məsələn, zərərlilik metrikinin hesablanması) üzrə fikir ayrılığı olduqda bunu necə tənzimləyirsən?",
+    "answer": "Mən başa düşürəm ki, data mühəndisinin əsas vəzifəsi təkcə texniki boru kəməri çəkmək deyil, biznesə real dəyər verən düzgün məlumat çatdırmaqdır. Fikir ayrılığı yarandıqda emosiyalara və ya şəxsi fərziyyələrə qapılmıram; anderrayterin və ya analitikin biznes nöqteyi-nəzərini diqqətlə dinləyirəm, çünki sahəni ən yaxşı bilən onlardır. Daha sonra mənbə sistemdən real nümunə sətirlər və faktiki SQL sorğu nəticələri çıxararaq rəqəmlər üzərindən danışıram. Məqsəd kimin haqlı olduğunu sübut etmək deyil, hər iki tərəfin eyni tərifi qəbul etməsini təmin etmək və bunu data lüğətində (Data Catalog / Dictionary) rəsmiləşdirməkdir.",
+    "code": {
+      "language": "markdown",
+      "dialect": "General",
+      "snippet": "**Münaqişənin həlli addımları:**\n1. Empatiya və aktiv dinləmə: Biznes tələbini tam anlamaq\n2. Dəlillərə əsaslanma: Real data nümunələri və SQL çıxarışları ilə müzakirə\n3. Ortaq konsensus: Metrikin vahid riyazi düsturunu təsdiqləmək\n4. Sənədləşdirmə: Nəticəni Data Dictionary-yə qeyd etmək"
+    },
+    "followUps": [
+      "Biznes tərəfi texniki cəhətdən icrası qeyri-mümkün və ya çox baha başa gələn bir tələb irəli sürərsə nə deyərsən?",
+      "Qeyri-texniki həmkarlara mürəkkəb mühəndislik məhdudiyyətlərini necə izah edirsən?"
+    ]
+  }
+]

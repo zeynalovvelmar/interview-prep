@@ -1,0 +1,130 @@
+[
+  {
+    "id": "qa-lh-01",
+    "category": "Lakehouse/Delta/Iceberg",
+    "difficulty": "Easy",
+    "question": "Data Lakehouse konsepsiyası nədir və Data Warehouse ilə Data Lake-in hansı xüsusiyyətlərini birləşdirir?",
+    "answer": "Klassik Data Lake ucuz obyekt saxlanmasında (S3, MinIO) istənilən formatda (xammal JSON, CSV, Parquet) böyük həcmli məlumat saxlamağa imkan versə də, ACID tranzaksiya, indeksləmə və məlumat keyfiyyəti mexanizmlərindən məhrum idi. Klassik Data Warehouse isə sürətli və keyfiyyətli analitika təqdim etsə də, çox baha və qapalı idi. Data Lakehouse açıq saxlama formatları (Parquet) üzərində müasir cədvəl qatları (Delta Lake, Apache Iceberg) əlavə edərək ucuz obyekt anbarında ACID tranzaksiyaları, schema enforcement və sürətli SQL analitikasını təmin edən hibrid arxitekturadır. Bu, iki ayrı sistem saxlamaq zərurətini aradan qaldırır.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# PySpark ilə Delta Lakehouse cədvəlinə yazma:\ndf.write \\\n  .format('delta') \\\n  .mode('append') \\\n  .save('s3a://insurance-lake/bronze/policies')"
+    },
+    "followUps": [
+      "Lakehouse arxitekturasında BI alətləri birbaşa göldən necə oxuyur?",
+      "Nə vaxt təmiz Data Warehouse (məsələn, Snowflake/Postgres) Lakehouse-dan daha yaxşı seçim ola bilər?"
+    ]
+  },
+  {
+    "id": "qa-lh-02",
+    "category": "Lakehouse/Delta/Iceberg",
+    "difficulty": "Medium",
+    "question": "Delta Lake-də ACID tranzaksiyalar və atomarlıq necə təmin edilir?",
+    "answer": "Delta Lake cədvəlin yerləşdiyi qovluqda '_delta_log' adlı xüsusi metadata alt-qovluğu saxlayır. Hər bir yazma, silmə və ya yeniləmə əməliyyatı zamanı məlumat faylları (Parquet) birbaşa dəyişdirilmir; əvəzində yeni fayllar yazılır və '_delta_log' daxilində sıra ilə nömrələnən ardıcıl JSON commit faylı (məsələn, '000001.json') yaradılır. Bu JSON faylında hansı Parquet fayllarının əlavə olunduğu ('add') və hansı köhnələrin ləğv edildiyi ('remove') qeyd olunur. Oxucu tətbiqlər cədvəli açarkən yalnız uğurla commit olunmuş son JSON log vəziyyətini oxuduğu üçün yarımçıq qalmış əməliyyatları heç vaxt görmürlər.",
+    "code": {
+      "language": "json",
+      "dialect": "JSON",
+      "snippet": "// _delta_log/000001.json commit faylının məzmunu:\n{\"commitInfo\":{\"timestamp\":1740000000,\"operation\":\"WRITE\",\"operationParameters\":{\"mode\":\"Append\"}}}\n{\"add\":{\"path\":\"part-0001.parquet\",\"size\":154200,\"dataChange\":true}}"
+    },
+    "followUps": [
+      "Checkpoint faylı (checkpoint.parquet) Delta Lake-də nə üçün lazımdır?",
+      "Eyni vaxtda birdən çox proses eyni Delta cədvəlinə yazarsa nə baş verir (Optimistic Concurrency Control)?"
+    ]
+  },
+  {
+    "id": "qa-lh-03",
+    "category": "Lakehouse/Delta/Iceberg",
+    "difficulty": "Hard",
+    "question": "Apache Iceberg-in metadata arxitekturası hansı qatlardan ibarətdir və cədvəl necə idarə olunur?",
+    "answer": "Iceberg cədvəlləri qovluq strukturu ilə deyil, iyerarxik metadata ağacı ilə idarə olunur. Ən yuxarıda 'Catalog' dayanır (məsələn, Hive Metastore, Nessie, AWS Glue); kataloq cədvəlin ən son 'metadata.json' faylının dəqiq fiziki ünvanını saxlayır. Həmin 'metadata.json' faylı cədvəlin cari snapshot ID-sini, sxemini və partisiya qaydalarını saxlayır. Snapshot öz növbəsində 'Manifest List' (avro) faylına istinad edir; manifest list isə partisiya aralıqlarını saxlayan bir neçə 'Manifest file'-a bağlanır. Ən aşağıda isə faktiki məlumatları saxlayan Parquet və ya ORC faylları yerləşir. Bu struktur kataloq səviyyəsində tək bir atomar pointer dəyişimi ilə sürətli və etibarlı kommit təmin edir.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Apache Iceberg Metadata İyerarxiyası:\n-- [Iceberg Catalog] -> son metadata.json ünvanını göstərir\n--      └── [metadata.json] -> Cari Snapshot ID, Partisiya sxemi\n--              └── [Manifest List (avro)] -> Manifest fayllarının siyahısı\n--                      └── [Manifest File (avro)] -> Data fayllarının ünvanı + min/max statistika\n--                              └── [Data Files (*.parquet)] -> Həqiqi məlumatlar"
+    },
+    "followUps": [
+      "Iceberg-də fayl siyahısını almaq üçün S3 'list objects' əmrinə niyə ehtiyac qalmır?",
+      "Hidden Partitioning nədir və Iceberg-də sorğuları necə asanlaşdırır?"
+    ]
+  },
+  {
+    "id": "qa-lh-04",
+    "category": "Lakehouse/Delta/Iceberg",
+    "difficulty": "Medium",
+    "question": "Delta Lake və Apache Iceberg arasındakı əsas oxşar və fərqli cəhətlər hansılardır?",
+    "answer": "Hər iki format Parquet faylları üzərində ACID tranzaksiyaları, Time Travel, Schema Evolution və səmərəli partisiya filtrləməsini təmin edir. Əsas fərqlərdən biri kataloq və metadata idarəetməsidir: Delta Lake ilkin olaraq fayl sistemi qovluğuna və oradakı '_delta_log' JSON sənədlərinə əsaslanır, Iceberg isə tam mərkəzləşdirilmiş kataloq (Catalog pointer) və iyerarxik Avro manifest ağacı ilə işləyir. İkinci fərq ekosistem bağlılığıdır: Delta Lake Databricks və Spark mühitində ən yetkin və sürətli inteqrasiyaya malikdir, Iceberg isə müxtəlif mühərriklər (Trino, Flink, Spark, Snowflake, ClickHouse) arasında daha geniş neytral açıq icma dəstəyi qazanmışdır. Təcrübəmdə MinIO üzərində Delta Lake ilə işləmişəm, lakin Iceberg-in konseptual fərqlərini də yaxşı anlayıram.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Delta Lake: _delta_log/*.json faylları birbaşa cədvəl qovluğunda yaşayır\n-- Apache Iceberg: Kataloq pointer -> metadata.json -> manifest-list.avro -> data/*.parquet"
+    },
+    "followUps": [
+      "Apache Hudi bu iki formatdan nə ilə fərqlənir (Streaming və Merge-on-Read optimizasiyası)?",
+      "Formatlar arasında miqrasiya etmək mümkündürmü (məsələn, Delta UniForm)?"
+    ]
+  },
+  {
+    "id": "qa-lh-05",
+    "category": "Lakehouse/Delta/Iceberg",
+    "difficulty": "Easy",
+    "question": "Time Travel (Zaman səyahəti) nədir və səhv baş verdikdə necə kömək edir?",
+    "answer": "Time Travel — Lakehouse cədvəlinin keçmişdəki istənilən versiyasına və ya zaman anına (timestamp) sorğu atmaq və ya həmin vəziyyətə geri qayıtmaq (rollback) imkanıdır. Köhnə Parquet faylları dərhal silinmədiyi və hər commit jurnalda qeydiyyata alındığı üçün, məsələn, yanlış işləyən bir ETL skripti cədvəli korladıqda asanlıqla dünənki versiyanı bərpa etmək olar. Həmçinin maliyyə və sığorta auditlərində keçən ayın 15-i hesabat çıxarılan andakı dəqiq data mənzərəsini yenidən təkrarlamaq üçün istifadə edilir.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# Delta Lake-də versiyaya və ya tarixə görə Time Travel:\ndf_historical = spark.read \\\n    .format('delta') \\\n    .option('versionAsOf', 3) \\\n    .load('s3a://lake/gold/kpi_summary')\n\n# və ya timestamp ilə:\n# .option('timestampAsOf', '2026-03-01 12:00:00')"
+    },
+    "followUps": [
+      "Köhnə fayllar həmişəlik qalırsa, disk dolmasının qarşısını necə alırlar (VACUUM əmri)?",
+      "VACUUM retention period keçdikdən sonra həmin versiyalara Time Travel etmək olarmı?"
+    ]
+  },
+  {
+    "id": "qa-lh-06",
+    "category": "Lakehouse/Delta/Iceberg",
+    "difficulty": "Medium",
+    "question": "Schema Enforcement və Schema Evolution nədir və data xətalarından necə qoruyur?",
+    "answer": "Schema Enforcement (Sxem məcburiyyəti) — cədvələ mövcud sxemə uyğun gəlməyən yad sütunlar və ya səhv data tipləri yazılmaq istəndikdə yazma əməliyyatının avtomatik dayandırılması və xəta verilməsidir; bu, gölün zibillənməsinin qarşısını alır. Schema Evolution (Sxem inkişafı) isə biznes tələbi ilə yeni sütun əlavə edildikdə cədvəli pozmadan və ya yenidən yaratmadan sxemi təhlükəsiz şəkildə genişləndirmək qabiliyyətidir. Məsələn, PySpark ilə yazarkən '.option(\"mergeSchema\", \"true\")' qeyd edildikdə, cədvələ avtomatik olaraq yeni sütun əlavə olunur və köhnə sətirlərdə həmin sütun NULL kimi görünür.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# Schema Evolution tətbiqi:\ndf_new_features.write \\\n    .format('delta') \\\n    .mode('append') \\\n    .option('mergeSchema', 'true') \\\n    .save('s3a://lake/silver/policies')"
+    },
+    "followUps": [
+      "Sütunun adını dəyişdirdikdə və ya sildikdə (column mapping) Delta Lake necə davranır?",
+      "Tiplər arasında uyğunsuzluq (məsələn, string yerinə int) olduqda mergeSchema xətanı həll edirmi?"
+    ]
+  },
+  {
+    "id": "qa-lh-07",
+    "category": "Lakehouse/Delta/Iceberg",
+    "difficulty": "Medium",
+    "question": "Small Files (kiçik fayllar) problemi nədir və OPTIMIZE / Compaction ilə necə aradan qaldırılır?",
+    "answer": "Real-time axınlar (streaming) və ya tez-tez icra olunan batch işlər hər dəfə minlərlə bir neçə kilobaytlıq xırda Parquet faylları yaradır. Çoxlu xırda fayl obyekt anbarında (S3) metadata axtarışını iflic edir, şəbəkə gecikmələrini (HTTP GET overhead) artırır və sorğuların sürətini kəskin aşağı salır. Bu problemi həll etmək üçün mütəmadi olaraq Compaction (birləşdirmə) prosesi icra olunur; məsələn, Delta Lake-də 'OPTIMIZE' əmri minlərlə xırda faylı birləşdirib 128MB və ya 1GB-lıq optimal böyük fayllara yığır. Həmçinin 'Z-ORDER BY' istifadə edərək ən çox filtr edilən sütunlara görə fayldaxili lokal düzülüş yaradılır və lazımsız fayllar oxunmadan ötürülür (Data Skipping).",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Delta Lake cədvəlində faylları optimallaşdırmaq və indeksləmək:\nOPTIMIZE core.fact_policy_sales \nZORDER BY (customer_id, policy_start_date);"
+    },
+    "followUps": [
+      "Z-Order üçün 10-dan çox sütun seçmək niyə tövsiyə edilmir?",
+      "Auto-compact və Optimized Writes konfiqurasiyaları nə işə yarayır?"
+    ]
+  },
+  {
+    "id": "qa-lh-08",
+    "category": "Lakehouse/Delta/Iceberg",
+    "difficulty": "Easy",
+    "question": "Medallion Architecture (Bronze, Silver, Gold) nədir və hər qatın məsuliyyəti nədən ibarətdir?",
+    "answer": "Medallion Architecture — Lakehouse daxilində məlumatın xammaldan yüksək keyfiyyətli analitik formata qədər pilləli təmizlənməsini və zənginləşməsini təşkil edən arxitektura dizaynıdır. Bronze qatı 'Raw / Xammal' məlumatları saxlayır: mənbədən gələn JSON, CSV və ya CDC dəyişiklikləri heç bir dəyişiklik edilmədən, ilkin formada arxivlənir. Silver qatı 'Cleaned & Conformed' məlumatları ehtiva edir: duplikatlar təmizlənir, data tipləri düzəldilir, NULL yoxlamaları və biznes validasiyaları tətbiq olunur. Gold qatı isə 'Curated / Business-ready' qatıdır: son hesabatlar, aqreqasiyalar, Star Schema cədvəlləri və Power BI / analitiklər üçün KPI metrikaları hazırlanır.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# Medallion axını: Bronze -> Silver\ndf_bronze = spark.read.format('delta').load('s3a://lake/bronze/policies')\ndf_silver = df_bronze \\\n    .filter(df_bronze.policy_number.isNotNull()) \\\n    .dropDuplicates(['policy_number']) \\\n    .withColumn('premium_amount', df_bronze.premium.cast('decimal(12,2)'))\ndf_silver.write.format('delta').mode('append').save('s3a://lake/silver/policies')"
+    },
+    "followUps": [
+      "Biznes istifadəçilərinin və analitiklərin Silver və ya Bronze qatına birbaşa çıxışına icazə verilməlidirmi?",
+      "Hər bir qatda saxlama formatı olaraq niyə Parquet/Delta seçilir?"
+    ]
+  }
+]

@@ -1,0 +1,98 @@
+[
+  {
+    "id": "qa-dq-01",
+    "category": "Data quality",
+    "difficulty": "Easy",
+    "question": "Data Quality-nin (Məlumat Keyfiyyətinin) 6 təməl ölçüsü hansılardır və sığorta nümunəsində necə təzahür edir?",
+    "answer": "Məlumat keyfiyyəti 6 əsas meyarla ölçülür. 1) 'Completeness' (Tamlıq): məcburi xanaların boş olmaması (məsələn, müştərinin FIN kodu və ya əlaqə nömrəsi NULL olmamalıdır). 2) 'Uniqueness' (Təkrarsızlıq): eyni sığorta müqaviləsinin və ya hadisənin sistemdə dublikat olmaması. 3) 'Validity' (Etibarlılıq): məlumatın təyin olunmuş formata uyğunluğu (məsələn, e-poçt formatı və ya FIN-in 7 simvol olması). 4) 'Timeliness' (Vaxtındalıq): hadisə baş verdikdən sonra məlumatın vaxtında hesabat bazasına çatması. 5) 'Accuracy' (Dəqiqlik): rəqəmin real həqiqəti əks etdirməsi (məsələn, mükafat məbləğinin düzgün hesablanması). 6) 'Consistency' (Uyğunluq): fərqli cədvəllərdə müştəri balansının bir-biri ilə ziddiyyət təşkil etməməsi.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Təməl validasiya qaydaları:\nALTER TABLE core.dim_customer \n  ADD CONSTRAINT chk_fin_len CHECK (LENGTH(fin_code) = 7);\n\nALTER TABLE core.fact_policy_sales \n  ADD CONSTRAINT chk_dates CHECK (end_date >= start_date);"
+    },
+    "followUps": [
+      "Hər bir meyar üçün faiz nisbətində KPI (məsələn, 99.9% completeness) necə ölçülür?",
+      "Data Profiling nədir və layihəyə başlayarkən ilk nə üçün edilir?"
+    ]
+  },
+  {
+    "id": "qa-dq-02",
+    "category": "Data quality",
+    "difficulty": "Medium",
+    "question": "Great Expectations və ya Soda kimi Data Quality freymvorkları nə üçün lazımdır və pipeline-a necə qoşulur?",
+    "answer": "Data borularında hər dəfə əl ilə yüzlərlə SQL yoxlaması yazmaq yerinə 'Great Expectations' və ya 'Soda' kimi deklarativ kitabxanalardan istifadə olunur. Bu alətlər vasitəsilə JSON və ya YAML formatında qaydalar (məsələn, 'expect_column_values_to_not_be_null', 'expect_column_values_to_be_between') təyin edilir. Airflow və ya PySpark addımından sonra bu testlər avtomatik işə salınır; əgər məlumatlar gözləntilərə cavab vermirsə, pipeline dərhal dayandırılır (və ya xəbərdarlıq göndərilir) və avtomatik gözəl HTML 'Data Docs' hesabatı generasiya edilir. Bu, xətalı məlumatların Silver və Gold analitik qatlarına sızmasının qarşısını alır.",
+    "code": {
+      "language": "python",
+      "dialect": "Python",
+      "snippet": "# Great Expectations nümunəsi:\nimport great_expectations as gx\n\ncontext = gx.get_context()\nvalidator = context.sources.pandas_default.read_csv('policies_daily.csv')\n\nvalidator.expect_column_values_to_not_be_null(column='policy_id')\nvalidator.expect_column_values_to_be_between(column='premium_amount', min_value=1.0, max_value=500000.0)\nresults = validator.validate()\n\nif not results.success:\n    raise ValueError('Məlumat keyfiyyəti testi uğursuz oldu!')"
+    },
+    "followUps": [
+      "Data Docs hesabatları biznes tərəfdaşlarına təqdim edilə bilərmi?",
+      "In-pipeline testləri ilə post-load monitorinq arasındakı fərq nədir?"
+    ]
+  },
+  {
+    "id": "qa-dq-03",
+    "category": "Data quality",
+    "difficulty": "Medium",
+    "question": "Bad Data (xarab/xətalı məlumat) aşkar edildikdə hansı strategiyalar tətbiq olunur (Fail-fast vs Quarantine)?",
+    "answer": "Xətalı məlumatla qarşılaşdıqda iki əsas yanaşma var. Birinci yanaşma 'Fail-Fast' (dərhal dayandırma): əgər məlumat kritik maliyyə və ya mühasibatlıq yekunlarıdırsa, boru kəməri qəsdən dayandırılır ki, səhv məlumat bazaya yazılmasın. İkinci və daha elastik yanaşma isə 'Quarantine / Dead-Letter Queue (DLQ)' pattern-idir: bu zaman təmiz və düzgün sətirlər normal şəkildə Silver/Gold qatlarına yazılır, xətalı sətirlər isə kənara — xüsusi 'quarantine_policies' cədvəlinə və ya Kafka DLQ mövzusuna yönləndirilir. Həmin karantin cədvəlində xətanın səbəbi qeyd olunur və sonradan komanda tərəfindən araşdırılıb düzəldilir.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# Quarantine yanaşması:\ndf_valid = df.filter((df.premium > 0) & (df.customer_id.isNotNull()))\ndf_quarantine = df.filter((df.premium <= 0) | (df.customer_id.isNull()))\n\n# Düzgünlər davam edir, xətalılar karantinə düşür:\ndf_valid.write.format('delta').mode('append').save('s3a://lake/silver/policies')\ndf_quarantine.write.format('delta').mode('append').save('s3a://lake/quarantine/policies')"
+    },
+    "followUps": [
+      "Karantinə düşmüş məlumatlar sonradan necə təkrar boru kəmərinə daxil edilir (Re-drive / Reprocess)?",
+      "DLQ dolduqda komandaya necə bildiriş göndərilməlidir?"
+    ]
+  },
+  {
+    "id": "qa-dq-04",
+    "category": "Data quality",
+    "difficulty": "Medium",
+    "question": "Schema Drift nədir və ETL borularını qırmaması üçün necə qorunmaq olar?",
+    "answer": "Schema Drift — mənbə sistemdə (məsələn, kənar API-də və ya tətbiq bazasında) xəbərdarlıq edilmədən yeni sütunların əlavə olunması, köhnə sütunların silinməsi, adlarının dəyişdirilməsi və ya data tiplərinin fərqliləşməsidir. Əgər ETL borusu ciddi statik sxem tələb edirsə, ilk dəyişiklikdə çökəcək. Bunun qarşısını almaq üçün: 1) Xammal (Bronze) qatında JSON və ya yarı-strukturlaşdırılmış formatda məlumatı tam saxlamaq; 2) PySpark/Delta-da 'mergeSchema=True' istifadə etmək; 3) Kafka və API-lərdə Confluent Schema Registry və Avro/Protobuf vasitəsilə sxem uyğunluq qaydalarını (Backward/Forward Compatibility) məcburi etmək lazımdır.",
+    "code": {
+      "language": "python",
+      "dialect": "Python",
+      "snippet": "# Gözlənilməz sütunları təhlükəsiz qəbul etmək üçün JSON payload-ı xammal saxlamaq:\nraw_record = {\n    'event_id': 1001,\n    'event_timestamp': '2026-03-24T10:00:00Z',\n    'raw_payload': json.dumps(incoming_api_response) # İstənilən yeni açar bura düşür\n}"
+    },
+    "followUps": [
+      "Backward compatibility ilə Forward compatibility arasındakı fərq nədir?",
+      "Sütunun tipi int-dən string-ə dəyişdikdə bu drift necə idarə olunur?"
+    ]
+  },
+  {
+    "id": "qa-dq-05",
+    "category": "Data quality",
+    "difficulty": "Easy",
+    "question": "Sığorta şirkətində (məsələn, Atəşgah Sığorta) ən kritik məlumat keyfiyyəti qaydaları hansılardır?",
+    "answer": "Sığorta sahəsində məlumat xətaları birbaşa maliyyə itkisinə və tənzimləyici (Mərkəzi Bank) cərimələrinə səbəb ola bilər. Əsas qaydalar: 1) Mükafat və təminat məbləği müsbət olmalıdır ('premium_amount > 0', 'insured_sum > 0'). 2) Tarix məntiqi: sığorta polisinin bitmə tarixi başlama tarixindən böyük olmalıdır ('end_date >= start_date'). 3) Sığorta hadisəsi (claim) yalnız aktiv polis müddətində baş verə bilər ('claim_date BETWEEN policy_start AND policy_end'). 4) Şəxsiyyət və VÖEN yoxlanışları: müştərinin FIN kodu dəqiq 7 simvol və unikal olmalıdır. 5) Kompensasiya ödənişi təminat limitini aşa bilməz ('claim_payout <= insured_sum').",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Sığorta hadisəsi (claim) biznes validasiyası:\nSELECT \n    c.claim_id,\n    c.claim_date,\n    p.start_date,\n    p.end_date\nFROM core.fact_claims c\nJOIN core.dim_policy p ON c.policy_key = p.policy_key\nWHERE c.claim_date NOT BETWEEN p.start_date AND p.end_date; -- Bu sətirlər BİZNES XƏTASIDIR!"
+    },
+    "followUps": [
+      "Əgər müştəri polisin müddəti bitdikdən sonra zərərlə bağlı gec müraciət edibsə nəzərə alınırmı?",
+      "Avtomobil sığortasında (KASKO) dövlət qeydiyyat nişanının formatı necə yoxlanılır?"
+    ]
+  },
+  {
+    "id": "qa-dq-06",
+    "category": "Data quality",
+    "difficulty": "Medium",
+    "question": "Data SLA (Service Level Agreement) nədir və məlumat keyfiyyətinin monitorinqi necə qurulur?",
+    "answer": "Data SLA — məlumatın biznes istifadəçilərinə və analitiklərə hansı dəqiqlikdə, tamlıqda və ən geci saat neçəyə qədər çatdırılacağını təyin edən rəsmi daxili öhdəlikdir (məsələn, 'Dünənin sığorta satış hesabatı hər səhər 08:30-a qədər 99.9% tamlıqla hazır olmalıdır'). Monitorinq üçün hər bir ETL prosesinin sonunda xüsusi audit cədvəllərinə metadata yazılır: başlama/bitmə vaxtı, daxil olan sətir sayı, çıxan sətir sayı, karantinə atılan sətir sayı. Bu metrikalar Prometheus və Grafana panellərində vizuallaşdırılır; gecikmə və ya kəskin anomaliya (məsələn, gündəlik sətir sayı 50%-dən çox azaldıqda) olduqda Telegram/Slack siqnalı çalınır.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- ETL Audit cədvəli:\nCREATE TABLE audit.pipeline_execution_log (\n    log_id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\n    pipeline_name   VARCHAR(100) NOT NULL,\n    run_date        DATE NOT NULL,\n    rows_extracted  INT NOT NULL,\n    rows_loaded     INT NOT NULL,\n    quarantine_rows INT NOT NULL,\n    status          VARCHAR(20) NOT NULL,\n    duration_sec    NUMERIC(6, 2) NOT NULL,\n    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP\n);"
+    },
+    "followUps": [
+      "Data Freshness (təzəlik) monitorinqi üçün hansı sorğudan istifadə olunur (MAX(created_at))?",
+      "Data Observability alətləri (Monte Carlo, Datafold) haqqında eşitmisənmi?"
+    ]
+  }
+]

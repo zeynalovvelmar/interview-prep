@@ -1,0 +1,130 @@
+[
+  {
+    "id": "qa-mod-01",
+    "category": "Modeling",
+    "difficulty": "Easy",
+    "question": "Star Schema və Snowflake Schema arasındakı fərq nədir və analitik sistemlərdə (DWH) niyə Star Schema üstün tutulur?",
+    "answer": "Star Schema mərkəzdə fakt cədvəli və birbaşa ona qoşulan denormalizasiya olunmuş dimensiya cədvəllərindən ibarətdir; strukturu ulduza bənzəyir. Snowflake Schema isə dimensiya cədvəllərinin təkrarı azaltmaq məqsədilə 3NF qaydalarına uyğun alt-dimensiyalara parçalanmasıdır (məsələn, Məhsul -> Alt kateqoriya -> Kateqoriya). Snowflake saxlanma yerinə qənaət etsə də, Star Schema analitik sorğularda daha az JOIN tələb etdiyi, BI alətləri üçün anlaşıqlı olduğu və oxuma performansını artırdığı üçün müasir DWH-larda həmişə üstün tutulur.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- Star Schema nümunəsi: Fakt cədvəli birbaşa əsas dimensiyalara bağlanır\nSELECT \n    d.year_actual,\n    c.city_name,\n    SUM(f.premium_amount) AS total_premium\nFROM core.fact_policy_sales f\nJOIN core.dim_date d ON f.date_key = d.date_key\nJOIN core.dim_customer c ON f.customer_key = c.customer_key\nGROUP BY d.year_actual, c.city_name;"
+    },
+    "followUps": [
+      "Snowflake sxeminin istifadəsi hansı nadir hallarda əsaslandırıla bilər?",
+      "Constellation (Fact Constellation) sxemi nədir?"
+    ]
+  },
+  {
+    "id": "qa-mod-02",
+    "category": "Modeling",
+    "difficulty": "Easy",
+    "question": "Fakt və Dimensiya cədvəlləri arasındakı fərq nədir və Factless Fact table nədir?",
+    "answer": "Fakt cədvəlləri biznesdə baş verən hadisələri və kəmiyyət ölçülərini (metrikaları: satış məbləği, ödənilən zərər, zəng müddəti) saxlayır və adətən çox sürətlə böyüyən dar sətirlərdən ibarət olur. Dimensiya cədvəlləri isə bu hadisələrin kontekstini ('Kim?', 'Nə vaxt?', 'Harada?', 'Hansı məhsul?') izah edən təsviri məlumatları (müştəri adı, filial ünvanı) ehtiva edir. 'Factless Fact table' isə tərkibində heç bir ədədi metriki (məbləğ və s.) olmayan, yalnız hadisənin baş verdiyini və ya qarşılıqlı əlaqəni (məsələn, tələbənin dərslərə davamiyyəti və ya polisin təbliğat kampaniyası) göstərən xarici açarlar yığımıdır.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Factless Fact Table: Təbliğat tədbirlərində müştəri iştirakı\nCREATE TABLE core.fact_customer_promotion_attendance (\n    promotion_key INT NOT NULL,\n    customer_key  INT NOT NULL,\n    date_key      INT NOT NULL,\n    channel_key   INT NOT NULL,\n    CONSTRAINT pk_promo_attend PRIMARY KEY (promotion_key, customer_key, date_key)\n);"
+    },
+    "followUps": [
+      "Fakt cədvəlinin 'Grain' (dənəvərlik) anlayışı nə deməkdir?",
+      "Dimensiya cədvəlində Null dəyərlər açar kimi necə idarə olunur (-1 Naməlum sətri)?"
+    ]
+  },
+  {
+    "id": "qa-mod-03",
+    "category": "Modeling",
+    "difficulty": "Medium",
+    "question": "Slowly Changing Dimensions (SCD) Type 1, Type 2 və Type 3 nədir və tarixçə necə qorunur?",
+    "answer": "SCD — dimensiya atributları zamanla dəyişdikdə bu dəyişikliklərin necə idarə olunacağını müəyyən edən üsullardır. Type 1 köhnə dəyərin üzərinə yazır (overwrite), heç bir tarixçə saxlamır (yalnız orfoqrafik xətaları düzəltmək üçün yararlıdır). Type 2 ən geniş yayılan üsuldur: hər dəyişiklik üçün yeni sətir əlavə edir, 'effective_date', 'end_date' və 'is_current' bayraqları ilə tam tarixi qoruyur. Type 3 isə yalnız son bir dəyişikliyi saxlamaq üçün eyni sətirdə yeni sütun açır ('previous_city', 'current_city'). Sığorta və bank analitikasında audit və dəqiq hesabatlılıq üçün həmişə SCD Type 2 tətbiq olunur.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- SCD Type 2 dimensiya cədvəl strukturu:\nCREATE TABLE core.dim_customer (\n    customer_key      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\n    customer_id       INT NOT NULL,          -- Natural / Business Key\n    full_name         VARCHAR(100) NOT NULL,\n    address_city      VARCHAR(50) NOT NULL,\n    effective_date    DATE NOT NULL,         -- Başlama tarixi\n    end_date          DATE NULL,             -- Bitmə tarixi (aktiv sətir üçün NULL və ya 9999-12-31)\n    is_current        BOOLEAN NOT NULL       -- Cari aktiv vəziyyət (TRUE/FALSE)\n);"
+    },
+    "followUps": [
+      "SCD Type 4 və Type 6 (1+2+3 hibridi) nədir?",
+      "Fact cədvəli SCD Type 2 cədvəlinə hansı açarla qoşulmalıdır: Natural Key, yoxsa Surrogate Key?"
+    ]
+  },
+  {
+    "id": "qa-mod-04",
+    "category": "Modeling",
+    "difficulty": "Easy",
+    "question": "Surrogate Key nədir və niyə Natural (Business) Key yerinə istifadə olunur?",
+    "answer": "Surrogate Key — heç bir biznes mənası daşımayan, məlumat anbarı (DWH) tərəfindən süni şəkildə yaradılmış unikal tam ədəd (integer/bigint) açardır. Natural Key isə mənbə sistemdən gələn biznes nömrəsidir (məsələn, FIN kod, polis nömrəsi, VÖEN). Surrogate Key-in istifadə səbəbləri: birincisi, SCD Type 2 zamanı eyni Natural Key-ə sahib müştərinin müxtəlif dövrlərə aid bir neçə sətri yarandıqda onları fərqləndirmək; ikincisi, fərqli mənbə sistemlərdən gələn eyni adlı ID toqquşmalarının qarşısını almaq; üçüncüsü isə tam ədəd (integer) əsasında JOIN-lərin string-lərə nisbətən qat-qat sürətli işləməsidir.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- dim_customer:\n-- customer_key (Surrogate Key, PK: 1, 2, 3...)\n-- customer_id  (Natural Key: 'CUST-009', 'CUST-009')\n-- is_current   (TRUE, FALSE)\n-- fact_policy_sales cədvəlində customer_key saxlanılır!"
+    },
+    "followUps": [
+      "Paylanmış sistemlərdə (Spark, BigQuery) Surrogate Key yaratmaq niyə çətinləşə bilər (monoton artım problemi)?",
+      "Surrogate Key üçün HASH (MD5/SHA256) açarları nə vaxt seçilir?"
+    ]
+  },
+  {
+    "id": "qa-mod-05",
+    "category": "Modeling",
+    "difficulty": "Medium",
+    "question": "Sığorta şirkəti (məsələn, Atəşgah Sığorta) üçün əsas analitik Star Schema necə dizayn olunar?",
+    "answer": "Sığorta analitikasında əsas biznes prosesləri polislərin satışı və sığorta iddialarının (claims) tənzimlənməsidir. Belə bir arxitekturada əsas mərkəz 'fact_policy_sales' və 'fact_claims' cədvəlləri olur. Dimensiya cədvəlləri kimi 'dim_customer' (müştəri profili və risk sinfi), 'dim_policy' (məhsul növü: KASKO, İcbari, Könüllü Tibbi), 'dim_agent' (satışı edən agent və ya filial), 'dim_coverage' (təminat növü və limitləri) və 'dim_date' qurulur. Belə model rəhbərliyə hansı filialın və ya agentin hansı sığorta növündən nə qədər mükafat topladığını və nə qədər zərər ödənildiyini anlıq təhlil etmək imkanı verir.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- Sığorta satışı fakt cədvəli nümunəsi:\nCREATE TABLE core.fact_policy_sales (\n    policy_sales_key BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\n    date_key         INT NOT NULL REFERENCES core.dim_date(date_key),\n    customer_key     BIGINT NOT NULL REFERENCES core.dim_customer(customer_key),\n    agent_key        INT NOT NULL REFERENCES core.dim_agent(agent_key),\n    product_key      INT NOT NULL REFERENCES core.dim_product(product_key),\n    premium_amount   NUMERIC(12, 2) NOT NULL, -- Sığorta haqqı\n    insured_sum      NUMERIC(14, 2) NOT NULL  -- Təminat məbləği\n);"
+    },
+    "followUps": [
+      "Loss Ratio (Zərərlilik nisbəti: Claim / Premium) hesablayarkən fact_policy və fact_claims necə birləşdirilir?",
+      "Policy lifecycle (Təklif -> Aktiv -> Ləğv olunmuş -> Başa çatmış) dəyişikliklərini izləmək üçün Accumulating Snapshot Fact cədvəli necə qurulur?"
+    ]
+  },
+  {
+    "id": "qa-mod-06",
+    "category": "Modeling",
+    "difficulty": "Medium",
+    "question": "Conformed Dimension nədir və fərqli biznes prosesləri arasında necə körpü yaradır?",
+    "answer": "Conformed Dimension — müəssisə daxilində birdən çox fakt cədvəli tərəfindən paylaşılan, hamı üçün eyni məna və atributlara malik vahid dimensiya cədvəlidir (Ralph Kimball metodologiyasının əsas tərkib hissəsi). Məsələn, 'dim_customer' və ya 'dim_date' həm polis satışı ('fact_policy_sales'), həm də sığorta hadisəsi ('fact_claims') tərəfindən eyni məna ilə istifadə edilir. Conformed dimensiyalar olmadan fərqli departamentlərin hesabatlarını (məsələn, müştərinin ödədiyi ümumi mükafat ilə ona ödənilən ümumi kompensasiyanı) bir araya gətirmək mümkün olmazdı. Bu, məlumat siloslarının yaranmasının qarşısını alır.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Drill-across sorğusu: Conformed dim_customer vasitəsilə 2 faktın birləşməsi\nWITH sales AS (\n    SELECT customer_key, SUM(premium_amount) AS total_paid\n    FROM core.fact_policy_sales GROUP BY customer_key\n),\nclaims AS (\n    SELECT customer_key, SUM(claim_payout) AS total_claimed\n    FROM core.fact_claims GROUP BY customer_key\n)\nSELECT c.full_name, s.total_paid, COALESCE(cl.total_claimed, 0) AS total_claimed\nFROM core.dim_customer c\nJOIN sales s ON c.customer_key = s.customer_key\nLEFT JOIN claims cl ON c.customer_key = cl.customer_key;"
+    },
+    "followUps": [
+      "Conformed Roll-up Dimension nədir?",
+      "Müxtəlif departamentlərin fərqli müştəri tərifləri olduqda Enterprise Bus Matrix necə kömək edir?"
+    ]
+  },
+  {
+    "id": "qa-mod-07",
+    "category": "Modeling",
+    "difficulty": "Easy",
+    "question": "Additive, Semi-Additive və Non-Additive faktlar (metrikalar) nədir? Hər birinə misal çək.",
+    "answer": "Additive (toplanan) faktlar modeldəki bütün dimensiyalar boyunca (zaman, müştəri, filial) toplana bilən kəmiyyətlərdir; ən geniş yayılan növdür, məsələn, 'ödənilən sığorta mükafatı' və ya 'satış miqdarı'. Semi-Additive (yarı-toplanan) faktlar bəzi dimensiyalar üzrə toplana bilir, lakin Zaman (Date) üzrə toplana bilməz; məsələn, 'bank balans qalığı' və ya 'anbardakı qalıq' (ayın son qalığını tapmaq üçün günlərin cəmini deyil, son günün dəyərini götürmək lazımdır). Non-Additive (toplanmayan) faktlar isə heç bir ölçü üzrə birbaşa toplana bilməyən nisbətlər və vahid qiymətlərdir; məsələn, 'zərərlilik faizi' və ya 'vahid qiymət' (onlar əvvəlcə ayrı-ayrı komponentləri toplanaraq yenidən bölünməlidir).",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Semi-additive faktın hesablanması (ayın son qalığı):\nSELECT \n    account_id,\n    balance_amount\nFROM core.fact_daily_balances\nWHERE balance_date = '2026-03-31'; -- Cəm (SUM) deyil, son status götürülür!"
+    },
+    "followUps": [
+      "Faiz və dərəcələri cədvəldə hazır saxlamaq yaxşıdır, yoxsa surət və məxrəci ayrı saxlayıb runtime-da hesablamaq?",
+      "Period-to-date faktları hansı kateqoriyaya aiddir?"
+    ]
+  },
+  {
+    "id": "qa-mod-08",
+    "category": "Modeling",
+    "difficulty": "Easy",
+    "question": "Data modeling zamanı denormalizasiya nə üçün edilir və OLTP ilə OLAP arasındakı fərq nədir?",
+    "answer": "OLTP (Online Transaction Processing) sistemləri gündəlik əməliyyatları tez yazmaq, məlumat təkrarlanmasının (duplication) və anomaliyaların qarşısını almaq üçün 3NF (3-cü Normal Forma) səviyyəsində normallaşdırılır. OLAP (Online Analytical Processing) və DWH sistemləri isə kütləvi oxuma və hesabat üçün nəzərdə tutulduğundan bilərəkdən denormalizasiya olunur. Denormalizasiya sətir təkrarına göz yumaraq cədvəlləri birləşdirir, mürəkkəb JOIN əməliyyatlarının sayını kəskin azaldır və analitik sorğuların sürətini dəfələrlə artırır. Bir sözlə: OLTP yazmağa (write-optimized), OLAP isə oxumağa və analitikaya (read-optimized) köklənmişdir.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- OLTP: 3 cədvəl (Müştəri, Şəhər, Ölkə) - Normallaşdırılmış\n-- OLAP: dim_customer (customer_id, full_name, city_name, country_name) - Denormalizasiya edilmiş tək cədvəl"
+    },
+    "followUps": [
+      "Normallaşdırmanın qurban verilməsi DWH-da hansı yeniləmə anomaliyalarına səbəb ola bilər?",
+      "Columnar formatlar (Parquet, ORC) denormalizasiya olunmuş cədvəllərin sıxılmasına necə kömək edir?"
+    ]
+  }
+]

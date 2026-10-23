@@ -1,0 +1,130 @@
+[
+  {
+    "id": "qa-spk-01",
+    "category": "Spark",
+    "difficulty": "Easy",
+    "question": "Apache Spark-ın əsas arxitektura komponentləri (Driver, Executor, Cluster Manager) hansılardır və iş necə paylanır?",
+    "answer": "Spark paylanmış klaster üzərində işləyən master-worker arxitekturasına əsaslanır. 'Driver' proqramın beyin mərkəzidir: istifadəçi kodunu icra edir, SparkSession yaradır, iş planını (DAG) qurur və tapşırıqları (tasks) bölüşdürür. 'Cluster Manager' (məsələn, Standalone, YARN və ya Kubernetes) klasterdəki fiziki resursları (CPU, RAM) idarə edir və executor-ları işə salır. 'Executor'-lar isə işçi qovşaqlarda (Worker nodes) işləyən JVM prosesləridir; onlar Driver-dən gələn tapşırıqları paralelləşdirilmiş şəkildə icra edir və nəticələri yaddaşda (və ya diskdə) saxlayırlar.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# SparkSession Driver tərəfindən başladılır:\nfrom pyspark.sql import SparkSession\n\nspark = SparkSession.builder \\\n    .appName('InsurancePolicyAnalytics') \\\n    .config('spark.executor.instances', '4') \\\n    .config('spark.executor.cores', '2') \\\n    .config('spark.executor.memory', '4g') \\\n    .getOrCreate()"
+    },
+    "followUps": [
+      "Driver prosesi çökərsə, işçi executor-lar hesablamağa davam edə bilərmi?",
+      "Executor-da core sayı ilə paralel icra olunan task sayı arasında necə əlaqə var?"
+    ]
+  },
+  {
+    "id": "qa-spk-02",
+    "category": "Spark",
+    "difficulty": "Easy",
+    "question": "Transformation və Action arasındakı fərq nədir və Lazy Evaluation nə üçün vacibdir?",
+    "answer": "Transformation mövcud DataFrame-dən yeni DataFrame yaradan təlimatlardır (məsələn, select, filter, groupBy, join); onlar çağırılan kimi dərhal hesablanmır, sadəcə icra planına (DAG) əlavə edilir. Action isə hesablamanı faktiki olaraq işə salan və nəticəni ya Driver-ə qaytaran, ya da xarici anbara yazan əmrlərdir (məsələn, count, show, collect, write). Bu gecikdirilmiş hesablama prinsipi 'Lazy Evaluation' adlanır. Lazy Evaluation Spark-ın daxili Catalyst Optimizer mexanizminə bütün addımları qabaqcadan təhlil etmək, lazımsız sütunları kəsmək (projection pruning) və filtrləri mümkün qədər tez tətbiq etmək (predicate pushdown) üçün unikal fürsət verir.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# 1. Transformation-lar: heç bir hesablama getmir, plan qurulur\ndf_raw = spark.read.parquet('s3a://lake/bronze/policies')\ndf_filtered = df_raw.filter(df_raw.status == 'ACTIVE')\ndf_grouped = df_filtered.groupBy('city').count()\n\n# 2. Action: Faktiki hesablama indi klasterdə başlayır\ndf_grouped.show(5)"
+    },
+    "followUps": [
+      "Niyə böyük datasetlərdə 'df.collect()' çağırmaq çox təhlükəlidir (Driver OOM)?",
+      "Spark UI-da hər bir Action ayrıca bir 'Job' yaradırmı?"
+    ]
+  },
+  {
+    "id": "qa-spk-03",
+    "category": "Spark",
+    "difficulty": "Medium",
+    "question": "Narrow və Wide dependency arasındakı fərq nədir və Shuffle niyə ən bahalı əməliyyat sayılır?",
+    "answer": "Narrow dependency zamanı valideyn RDD/DataFrame-in hər bir partisiya məlumatı yalnız bir övlad partisiya tərəfindən istifadə olunur (məsələn, 'filter', 'select', 'map'); burada heç bir şəbəkə mübadiləsi tələb olunmur və partisiya öz executor-unda sürətlə hesablanır. Wide dependency zamanı isə övlad partisiya birdən çox valideyn partisiyasından məlumat tələb edir (məsələn, 'groupBy', 'join', 'distinct'). Bu zaman 'Shuffle' baş verir: məlumatlar diskə yazılır, klasterin şəbəkəsi üzərindən fərqli qovşaqlara paylanır və yenidən yığılır. Disk I/O və şəbəkə gecikmələrinə görə Shuffle Spark proqramlarında ən böyük performans darboğazıdır.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# Narrow Transformation: qovşaqlararası şəbəkə ötürülməsi (shuffle) YOXDUR\ndf_active = df.filter(df.premium > 500)\n\n# Wide Transformation: partisiya açarına görə şəbəkə üzərindən SHUFFLE baş verir\ndf_agg = df_active.groupBy('agent_id').sum('premium')"
+    },
+    "followUps": [
+      "spark.sql.shuffle.partitions konfiqurasiyası nəyi təyin edir və susmaya görə sayı neçədir (200)?",
+      "Shuffle zamanı diskə yazılan müvəqqəti fayllar nə vaxt təmizlənir?"
+    ]
+  },
+  {
+    "id": "qa-spk-04",
+    "category": "Spark",
+    "difficulty": "Medium",
+    "question": "RDD, DataFrame və Catalyst Optimizer haqqında nə bilirsən?",
+    "answer": "RDD (Resilient Distributed Dataset) Spark-ın ən təməl, obyekt yönümlü, lakin struktursuz API-sidir; tip təhlükəsizliyi versə də, Spark onun daxilindəki məlumatı görə bilmədiyi üçün optimizasiya edə bilmir. DataFrame isə adlandırılmış sütunları və tipləri olan, relational cədvələ bənzər strukturlaşdırılmış kolleksiyadır. DataFrame Catalyst Optimizer mühərriki sayəsində qat-qat sürətlidir. Catalyst yazılmış kodu əvvəlcə mantiqi plana (Logical Plan), sonra optimallaşdırılmış plana və ən nəhayət Java bayt-koduna (Tungsten fiziki icra planına) çevirir.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# Sorğunun Catalyst tərəfindən qurulan icra planını görmək:\ndf.filter(df.amount > 100).select('id', 'amount').explain(True)"
+    },
+    "followUps": [
+      "Catalyst Optimizer 'Predicate Pushdown' optimizasiyasını Parquet fayllarına necə tətbiq edir?",
+      "Tungsten layihəsi yaddaş idarəsində Garbage Collection (GC) xərcini necə azaldır (Off-heap)?"
+    ]
+  },
+  {
+    "id": "qa-spk-05",
+    "category": "Spark",
+    "difficulty": "Hard",
+    "question": "Spark-da Data Skew (məlumat disbalansı) nədir və onu necə aşkar edib həll edirlər?",
+    "answer": "Data Skew — groupBy və ya join zamanı bir və ya bir neçə açarın həddən artıq çox təkrarlanması səbəbindən (məsələn, müştərilərin 80%-nin 'Bakı' filialında olması və ya NULL açarlar) tək bir partisiyanın nəhəng həcmə çatmasıdır. Nəticədə 99 task bir neçə saniyəyə bitdiyi halda, sonuncu 1 task saatlarla ilişib qalır və ya OOM xətası ilə çökür. Spark UI-da bu problem task icra müddətlərinin kəskin fərqlənməsi ilə asanlıqla görünür. Həlli üçün müasir Spark 3-də Adaptive Query Execution (AQE skew join) aktiv edilir, yaxud böyük açarlara təsadüfi nömrə əlavə edərək açarı süni parçalamaq ('Salting' texnikası) tətbiq olunur.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# 1. AQE Skew Join optimizasiyasını açmaq:\nspark.conf.set('spark.sql.adaptive.enabled', 'true')\nspark.conf.set('spark.sql.adaptive.skewJoin.enabled', 'true')\n\n# 2. Salting texnikası: böyük açarı parçalamaq\nfrom pyspark.sql.functions import concat, lit, rand\ndf_salted = df.withColumn('salted_key', concat(df.city, lit('_'), (rand() * 10).cast('int')))"
+    },
+    "followUps": [
+      "Join zamanı NULL dəyərlər çoxdursa, skew qarşısını almaq üçün onları necə idarə etmək lazımdır?",
+      "Spark UI-da 'Task Deserialization Time' və 'Shuffle Read Size' qrafikləri skew-i necə göstərir?"
+    ]
+  },
+  {
+    "id": "qa-spk-06",
+    "category": "Spark",
+    "difficulty": "Medium",
+    "question": "Broadcast Join nədir və nə vaxt istifadə olunur?",
+    "answer": "Böyük bir fakt cədvəli ilə kiçik bir dimensiya cədvəlini (məsələn, 10 milyonluq satış ilə 50 sətirlik şəhər cədvəlini) birləşdirərkən şəbəkə üzərindən hər iki tərəfi shuffle etmək çox səmərəsizdir. Broadcast Hash Join zamanı Spark kiçik cədvəlin hamısını Driver-ə yığır və klasterdəki hər bir executor-a bir dəfə göndərir (broadcast edir). Nəticədə böyük cədvəl heç bir şəbəkə hərəkəti olmadan öz yerində lokal olaraq kiçik cədvəllə birləşdirilir və shuffle tam aradan qalxır. Spark susmaya görə 10MB-a qədər ('spark.sql.autoBroadcastJoinThreshold') olan cədvəlləri avtomatik broadcast edir, lakin 'broadcast()' ipucu ilə bunu məcburi etmək də olar.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "from pyspark.sql.functions import broadcast\n\n# Kiçik cədvəli məcburi broadcast etmək:\ndf_joined = df_big_policies.join(\n    broadcast(df_small_branches),\n    df_big_policies.branch_id == df_small_branches.branch_id,\n    'inner'\n)"
+    },
+    "followUps": [
+      "Əgər broadcast edilən cədvəl əslində 2GB olarsa nə baş verər (Driver OOM)?",
+      "Sort-Merge Join hansı hallarda Broadcast Join-dən yeganə alternativ olur?"
+    ]
+  },
+  {
+    "id": "qa-spk-07",
+    "category": "Spark",
+    "difficulty": "Hard",
+    "question": "Spark-da yaddaş idarəetməsi (Execution vs Storage Memory) və OOM (OutOfMemory) xətaları necə aradan qaldırılır?",
+    "answer": "Spark JVM daxilində yaddaşı iki əsas dinamik paya bölür: 'Execution Memory' (shuffle, join, sort və aqreqasiya hesablamaları üçün) və 'Storage Memory' (cache və persist olunmuş məlumatlar üçün). Bu iki sahə arasında dinamik sərhəd var, lakin hesablamalar (Execution) üstünlüyə malikdir və lazım olduqda kəşlənmiş datanı diskə sıxışdıra bilər. Əgər 'java.lang.OutOfMemoryError' baş verərsə: Driver OOM üçün 'collect()' çağırışları aradan qaldırılır; Executor OOM üçün isə executor yaddaşı artırılır ('spark.executor.memory'), partisiya sayı çoxaldılaraq hər taska düşən həcm azaldılır və ya data skew problemi həll edilir.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# OOM-un qarşısını almaq üçün partisiya sayını artırmaq:\ndf_repartitioned = df.repartition(400)\n\n# Lazımsız cache-i yaddaşdan təmizləmək:\ndf.unpersist()"
+    },
+    "followUps": [
+      "Cache() ilə Persist() arasındakı fərq nədir (MEMORY_AND_DISK səviyyələri)?",
+      "Overhead memory (spark.executor.memoryOverhead) nə üçün lazımdır (PyArrow, JVM off-heap)?"
+    ]
+  },
+  {
+    "id": "qa-spk-08",
+    "category": "Spark",
+    "difficulty": "Medium",
+    "question": "repartition() və coalesce() arasındakı fərq nədir və nə vaxt hansı seçilməlidir?",
+    "answer": "'repartition(n)' partisiya sayını istər artırmaq, istərsə də azaltmaq üçün istifadə edilə bilər və həmişə tam şəbəkə qarışdırması (full shuffle) həyata keçirir; o, məlumatları qovşaqlar arasında bərabər bölmək üçün əladır. 'coalesce(n)' isə partisiya sayını YALNIZ AZALTMAQ üçün istifadə olunur və mövcud partisiyaları birləşdirərək tam shuffle-ın qarşısını alır; buna görə də qat-qat sürətli və az xərclidir. Məsələn, böyük filtrdən sonra yaranan yüzlərlə kiçik partiyanı diskə yazmazdan əvvəl tək və ya bir neçə fayla yığmaq üçün 'coalesce(5)' ən doğru seçimdir.",
+    "code": {
+      "language": "python",
+      "dialect": "PySpark",
+      "snippet": "# Partisiya sayını artırmaq (mütləq repartition):\ndf_balanced = df.repartition(100)\n\n# Böyük süzgəcdən sonra fayl sayını azaltmaq (coalesce, şafflsız):\ndf_output = df_filtered.coalesce(4)\ndf_output.write.parquet('s3a://lake/gold/reports')"
+    },
+    "followUps": [
+      "coalesce() istifadə edərkən partisiya ölçülərinin qeyri-bərabər olması riski varmı?",
+      "repartition(col('date')) sütuna görə bölmə zamanı nə edir?"
+    ]
+  }
+]

@@ -1,0 +1,130 @@
+[
+  {
+    "id": "qa-af-01",
+    "category": "Airflow",
+    "difficulty": "Easy",
+    "question": "Apache Airflow-un əsas komponentləri (Webserver, Scheduler, Metadata DB, Executor, Worker) hansılardır?",
+    "answer": "Airflow iş axınlarını (workflows) proqram təminatı kimi idarə edən orkestrasiya platformasıdır. 'Scheduler' təyin olunmuş vaxt qrafikinə və asılılıqlara nəzarət edir və vaxtı çatmış tapşırıqları icraya göndərir. 'Metadata Database' (adətən PostgreSQL) bütün DAG-ların, icra statuslarının, istifadəçilərin və dəyişənlərin vəziyyətini saxlayır. 'Webserver' istifadəçilərə monitorinq və idarəetmə üçün vizual UI interfeysi təqdim edir. 'Executor' tapşırıqların necə işlədiləcəyini (lokal proseslərdə, Celery klasterində və ya Kubernetes pod-larında) müəyyən edir, 'Worker'-lər isə həmin tapşırıq kodunu faktiki icra edən işçilərdir.",
+    "code": {
+      "language": "python",
+      "dialect": "Airflow",
+      "snippet": "# Əsas DAG tərifi:\nfrom airflow import DAG\nfrom airflow.operators.empty import EmptyOperator\nfrom datetime import datetime\n\nwith DAG(\n    dag_id='daily_insurance_etl',\n    start_date=datetime(2026, 1, 1),\n    schedule_interval='@daily',\n    catchup=False\n) as dag:\n    start = EmptyOperator(task_id='start')\n    end = EmptyOperator(task_id='end')\n    start >> end"
+    },
+    "followUps": [
+      "Scheduler işləməzsə Webserver tapşırıqları icra edə bilərmi?",
+      "Metadata DB-nin dolmasının qarşısını almaq üçün hansı təmizləmə mexanizmləri mövcuddur?"
+    ]
+  },
+  {
+    "id": "qa-af-02",
+    "category": "Airflow",
+    "difficulty": "Easy",
+    "question": "DAG (Directed Acyclic Graph) nədir və niyə Acyclic (dövrsüz) olmalıdır?",
+    "answer": "DAG — istiqamətləndirilmiş, lakin heç bir qapalı dövrəsi (loop) olmayan qrafdır. 'Directed' o deməkdir ki, tapşırıqlar arasındakı asılılıqların dəqiq bir istiqaməti var (məsələn, 'extract >> transform >> load'). 'Acyclic' olması isə o deməkdir ki, heç bir tapşırıq özündən əvvəlki addımlara sonsuz geri qayıda bilməz (A -> B -> C -> A ola bilməz). Əgər qrafda dövrə olsaydı, Scheduler sonsuz ilişməyə düşər, hansı tapşırığın nə vaxt bitdiyini və növbəti addımın nə vaxt başlamalı olduğunu müəyyən edə bilməzdi. Buna görə də Airflow sonsuz dövrləri sintaksis səviyyəsində qadağan edir.",
+    "code": {
+      "language": "python",
+      "dialect": "Airflow",
+      "snippet": "# Tapşırıq zəncirinin düzgün yönləndirilməsi (Bitshift operatorları):\nextract_policies >> transform_silver >> load_gold"
+    },
+    "followUps": [
+      "Əgər şərtdən asılı olaraq fərqli budaqlara getmək lazımdırsa, hansı operatordan istifadə olunur (BranchPythonOperator)?",
+      "Dinamik olaraq icra zamanı task sayını artırmaq üçün nə istifadə edilir (Dynamic Task Mapping)?"
+    ]
+  },
+  {
+    "id": "qa-af-03",
+    "category": "Airflow",
+    "difficulty": "Medium",
+    "question": "Idempotency (eynigüclülük) nədir və ETL borularında niyə ən vacib prinsip hesab olunur?",
+    "answer": "İdempotentlik — bir prosesin və ya boru kəmərinin eyni giriş məlumatları ilə istənilən sayda təkrari işə salınmasına baxmayaraq, sistemin son vəziyyətinin həmişə eyni qalması və heç bir təkrarlanma (duplicate) yaratmaması xüsusiyyətidir. Əgər gündəlik sığorta ETL tapşırığı gecə yarımçıq qalıb xəta verərsə və səhər yenidən 'Retry' edilərsə, idempotent olmayan skript məlumatları cədvələ ikinci dəfə əlavə edərək (duplication) maliyyə balansını pozar. İdempotentliyi təmin etmək üçün 'DELETE WHERE date = :run_date; INSERT ...' pattern-indən, Upsert (ON CONFLICT) məntiqindən və ya fayl partisiya səviyyəsində təmizləmədən istifadə olunur.",
+    "code": {
+      "language": "sql",
+      "dialect": "PostgreSQL",
+      "snippet": "-- İdempotent yükləmə: eyni gün üçün təkrar icra olunduqda əvvəlcə həmin tarixi təmizləyir\nDELETE FROM core.fact_daily_policy_sales \nWHERE sale_date = '{{ ds }}';\n\nINSERT INTO core.fact_daily_policy_sales (sale_date, policy_id, amount)\nSELECT sale_date, policy_id, amount\nFROM staging.stg_policy_sales\nWHERE sale_date = '{{ ds }}';"
+    },
+    "followUps": [
+      "Airflow-da Jinja şablonlaşdırma ('{{ ds }}') idempotentliyi necə dəstəkləyir?",
+      "Obyekt anbarında (S3/Delta) idempotent yazma necə təmin olunur ('replaceWhere' və ya 'overwrite' partisiya)?"
+    ]
+  },
+  {
+    "id": "qa-af-04",
+    "category": "Airflow",
+    "difficulty": "Medium",
+    "question": "Airflow-da logical_date (execution_date) və 'catchup' parametri necə işləyir?",
+    "answer": "Airflow-da hər bir DAG işə salınarkən ona təhkim edilən 'logical_date' (köhnə adı ilə 'execution_date') tapşırığın faktiki saat neçədə işlədiyini deyil, onun hansı dövrün məlumatlarını emal etməli olduğunu göstərən mantiqi zaman kəsiyidir. Məsələn, '@daily' DAG üçün saat '2026-03-02 00:00'-da başlayan işin logical_date-i '2026-03-01' olur, çünki o, dünənin tamamlanmış məlumatlarını emal edir. 'catchup=True' olarsa və DAG-ın 'start_date'-i keçmiş tarixə (məsələn, 1 ay əvvələ) qoyularsa, Airflow keçmiş bütün günlər üçün ardıcıl DAG run-ları başladır (backfill edir). İstehsalatda gözlənilməz kütləvi yüklənmələrin qarşısını almaq üçün adətən 'catchup=False' qoyulur.",
+    "code": {
+      "language": "python",
+      "dialect": "Airflow",
+      "snippet": "# Catchup parametrinin idarə edilməsi:\nwith DAG(\n    dag_id='claims_monthly_agg',\n    start_date=datetime(2026, 1, 1),\n    schedule='@monthly',\n    catchup=False # Keçmiş ayları avtomatik işə salma, yalnız sonuncu dövrü gözlə\n) as dag:\n    pass"
+    },
+    "followUps": [
+      "CLI vasitəsilə konkret keçmiş intervalı əl ilə backfill etmək üçün hansı əmr işlədilir (airflow dags backfill)?",
+      "Airflow 2.2-də data_interval_start və data_interval_end anlayışları nəyi dəyişdi?"
+    ]
+  },
+  {
+    "id": "qa-af-05",
+    "category": "Airflow",
+    "difficulty": "Medium",
+    "question": "Task-lar arasında məlumat mübadiləsi (XComs) necə işləyir və niyə böyük datanı XCom-a qoymaq olmaz?",
+    "answer": "XCom (Cross-Communication) tapşırıqlar arasında kiçik metadata və status məlumatlarını (məsələn, 'status=OK', emal olunan faylın adı və ya cədvəlin ID-si) ötürmək üçün istifadə olunur; 'xcom_push()' ilə yazılır və 'xcom_pull()' ilə oxunur. XCom bu dəyərləri birbaşa Airflow-un tranzaksiya Metadata Database-ində (PostgreSQL cədvəlində) saxlayır. Buna görə də XCom vasitəsilə giqabaytlarla data, böyük siyahılar və ya Pandas DataFrame-ləri ötürmək tamamilə yolverilməzdir; bu, bazanı şişirdərək bütün Scheduler-i iflic edər. Böyük məlumatlar həmişə obyekt anbarına (S3, MinIO) yazılmalı, XCom-da isə yalnız həmin faylın yolu ötürülməlidir.",
+    "code": {
+      "language": "python",
+      "dialect": "Airflow",
+      "snippet": "def push_file_path(**kwargs):\n    # YALNIZ fayl yolu ötürülür, datanın özü YOX:\n    kwargs['ti'].xcom_push(key='s3_path', value='s3a://lake/bronze/2026-03-01.parquet')\n\ndef read_file_path(**kwargs):\n    ti = kwargs['ti']\n    path = ti.xcom_pull(key='s3_path', task_ids='push_task')\n    print(f'Oxunacaq fayl: {path}')"
+    },
+    "followUps": [
+      "Custom XCom Backend (məsələn, S3 XCom backend) necə işləyir?",
+      "TaskFlow API-də ('@task') return dəyəri avtomatik XCom-a çevrilirmi?"
+    ]
+  },
+  {
+    "id": "qa-af-06",
+    "category": "Airflow",
+    "difficulty": "Medium",
+    "question": "Airflow Executor növləri (Sequential, Local, Celery, Kubernetes) arasındakı fərqlər nələrdir?",
+    "answer": "'SequentialExecutor' tapşırıqları tək-tək, ardıcıl icra edir (SQLite ilə işləyir, yalnız test üçün yararlıdır). 'LocalExecutor' tək bir server üzərində Python multiprocess ilə tapşırıqları paralel icra edir; kiçik və orta həcmlər üçün çox sadə və rahatdır. 'CeleryExecutor' tapşırıqları RabbitMQ/Redis mesaj növbəsinə ataraq çoxlu sayda paylanmış Worker qovşaqlarına paylayır; yüksək horizontal miqyaslanma təmin edir. 'KubernetesExecutor' isə hər bir task üçün dinamik olaraq ayrıca müstəqil K8s Pod yaradır, iş bitdikdə pod silinir; resursların tam izolyasiyası və fərqli Python asılılıqları üçün ən müasir həlldir.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Airflow Executor Seçimləri:\n-- Lokal/Dev: LocalExecutor (tək server, az xərc)\n-- Prod (Böyük Klaster): CeleryExecutor və ya KubernetesExecutor"
+    },
+    "followUps": [
+      "CeleryKubernetesExecutor hibrid növü nə vaxt istifadə olunur?",
+      "KubernetesExecutor zamanı pod yaradılma gecikməsi (cold start) performansa necə təsir edir?"
+    ]
+  },
+  {
+    "id": "qa-af-07",
+    "category": "Airflow",
+    "difficulty": "Medium",
+    "question": "Sensor nədir və 'poke' ilə 'reschedule' rejimləri worker resurslarını necə qoruyur?",
+    "answer": "Sensor — xarici bir hadisənin baş verməsini (məsələn, S3-ə faylın düşməsini, bazada cədvəlin dolmasını və ya API-nin hazır olmasını) gözləyən xüsusi növ operatordur. Susmaya görə Sensor 'mode=\"poke\"' rejimində işləyir: bu zaman worker slotu fasiləsiz olaraq həmin sensor tərəfindən tutulur və vaxtaşırı yoxlama edir; əgər gözləmə saatlarla çəkərsə, bütün worker slotları tükənir və digər real ETL işləri növbədə donub qalır (worker starvation). 'mode=\"reschedule\"' rejimində isə sensor yoxlama edir, şərt ödənməyibsə worker slotunu dərhal boşaldıb özünü yuxu vəziyyətinə salır və yalnız növbəti yoxlama vaxtı çatanda yenidən oyanır.",
+    "code": {
+      "language": "python",
+      "dialect": "Airflow",
+      "snippet": "from airflow.sensors.filesystem import FileSensor\n\n# Resursları qoruyan sensor təyini:\nwait_for_file = FileSensor(\n    task_id='wait_for_claims_file',\n    filepath='/data/incoming/claims_dump.csv',\n    poke_interval=300,      # hər 5 dəqiqədən bir yoxla\n    timeout=3600 * 6,       # maksimum 6 saat gözlə\n    mode='reschedule'       # WORKER SLOTUNU BLOKLAMA!\n)"
+    },
+    "followUps": [
+      "Sensor vaxt limiti (timeout) bitdikdə nə baş verir (AirflowSensorTimeout)?",
+      "Airflow Deferrable Operators (Triggerer) sensorları necə əvəzləyir?"
+    ]
+  },
+  {
+    "id": "qa-af-08",
+    "category": "Airflow",
+    "difficulty": "Easy",
+    "question": "Airflow-da tapşırıqların avtomatik təkrar cəhdi (retries) və xəta bildirişləri (callbacks) necə qurulur?",
+    "answer": "Şəbəkə kəsilməsi və ya xarici bazanın müvəqqəti cavab verməməsi kimi keçici problemlərə dözümlülük yaratmaq üçün DAG və ya task səviyyəsində 'retries' və 'retry_delay' parametrləri təyin olunur; məsələn, 'retries: 3, retry_delay: timedelta(minutes=5)'. Əgər bütün cəhdlər uğursuz olarsa və ya tapşırıq çökərsə, 'on_failure_callback' funksiyası işə düşür. Bu callback daxilində Python vasitəsilə avtomatik Telegram, Slack və ya e-poçt bildirişi göndərilərək komandaya xətanın detalları və loq linki anında xəbər verilir.",
+    "code": {
+      "language": "python",
+      "dialect": "Airflow",
+      "snippet": "from datetime import timedelta\n\ndef send_slack_alert(context):\n    task_id = context['task_instance'].task_id\n    log_url = context['task_instance'].log_url\n    print(f'[XƏTA ALARMI] {task_id} çökdü! Log: {log_url}')\n\ndefault_args = {\n    'owner': 'elmar',\n    'retries': 3,\n    'retry_delay': timedelta(minutes=5),\n    'on_failure_callback': send_slack_alert\n}"
+    },
+    "followUps": [
+      "retry_exponential_backoff parametri nə üçün istifadə olunur?",
+      "SLA (Service Level Agreement) miss callback nədir?"
+    ]
+  }
+]

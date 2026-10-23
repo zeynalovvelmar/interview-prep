@@ -1,0 +1,117 @@
+[
+  {
+    "id": "qa-mssql-01",
+    "category": "SQL Server",
+    "difficulty": "Medium",
+    "question": "SQL Server-in fiziki fayl strukturu: MDF, NDF, LDF və Filegroups nədir?",
+    "answer": "SQL Server-də hər bir verilənlər bazası ən azı iki fayldan ibarətdir: .mdf (Primary Data File - sistem məlumatları və əsas cədvəllər) və .ldf (Transaction Log - bütün dəyişikliklərin ardıcıl qeyd olunduğu jurnal). Böyük bazalarda məlumatları fərqli disklərə paylamaq və I/O yükünü bölüşdürmək üçün əlavə .ndf (Secondary Data Files) faylları yaradılır. Filegroup isə bu fiziki data fayllarını məntiqi olaraq qruplaşdıran mexanizmdir; məsələn, tarixi arxiv cədvəllərini daha ucuz diskdəki Filegroup-a, aktiv polisləri isə sürətli SSD diskdəki Filegroup-a yerləşdirmək mümkündür.",
+    "followUps": [
+      "Filegroup üzərində cədvəl necə yaradılır?",
+      "LDF faylı niyə Filegroup daxilində ola bilməz?"
+    ]
+  },
+  {
+    "id": "qa-mssql-02",
+    "category": "SQL Server",
+    "difficulty": "Hard",
+    "question": "Buffer Pool nədir və Checkpoint ilə Lazy Writer prosesləri arasındakı fərq nədir?",
+    "answer": "Buffer Pool SQL Server-in operativ yaddaşının (RAM) ən böyük hissəsidir və diskdən oxunan 8 KB-lıq data səhifələrini (Data Cache) və icra planlarını (Plan Cache) saxlayır. Səhifə RAM-da dəyişdirildikdə 'Dirty Page' adlanır. Checkpoint prosesi müəyyən intervalla dövrəyə girərək yaddaşdakı bütün dirty page-ləri diskdəki MDF faylına yazır və bərpa müddətini (Recovery Interval) qısaldır. Lazy Writer isə RAM çatışmazlığı yarandıqda işə düşür: o, ən az istifadə olunan səhifələri yaddaşdan təmizləyərək yeni sorğular üçün boş bufer (Free Buffer) yaradır.",
+    "followUps": [
+      "Page Life Expectancy (PLE) metriki nədir və normal göstəricisi neçə olmalıdır?",
+      "Buffer Cache Hit Ratio nəyi ölçür?"
+    ]
+  },
+  {
+    "id": "qa-mssql-03",
+    "category": "SQL Server",
+    "difficulty": "Hard",
+    "question": "VLF (Virtual Log File) fraqmentasiyası nədir və verilənlər bazasına necə zərər vurur?",
+    "answer": "SQL Server-in Transaction Log (.ldf) faylı daxilən VLF adlanan kiçik seqmentlərə bölünür. Əgər bazanın avtomatik böyüməsi (Auto-growth) çox kiçik ölçüdə (məsələn, 1 MB və ya 10%) qoyularsa, LDF faylı hər dəfə böyüdükcə minlərlə xırda VLF yaranır. Həddindən artıq VLF sayı (məsələn, 10,000+) bazanın açılmasını (Recovery phase), backup və restore prosesini, həmçinin replikasiya və CDC mexanizmini kəskin dərəcədə ləngidir. Ən yaxşı təcrübə LDF faylını əvvəlcədən böyük həcmdə yaratmaq və auto-growth-u sabit megabaytlarla (məsələn 512 MB və ya 1 GB) tənzimləməkdir.",
+    "followUps": [
+      "DBCC LOGINFO əmri nə işə yarayır?",
+      "VLF sayını necə azaltmaq və LDF-i necə təmizləmək olar?"
+    ]
+  },
+  {
+    "id": "qa-mssql-04",
+    "category": "SQL Server",
+    "difficulty": "Medium",
+    "question": "Bərpa Modelləri (Recovery Models) arasındakı fərq nədir və LDF faylı niyə diski doldurur?",
+    "answer": "SQL Server-də 3 bərpa modeli var: Full (bütün əməliyyatlar loqlanır, point-in-time recovery mümkündür), Simple (Checkpoint keçən kimi inaktiv loqlar təmizlənir, lakin yalnız son backup nöqtəsinə qayıtmaq olar), Bulk-Logged (kütləvi yükləmələr minimal loqlanır). Ən böyük səhv bazanı Full modeldə saxlayıb, müntəzəm Transaction Log Backup cədvəlini qurmamaqdır. Tam (Full) backup LDF-i kəsmir (truncate etmir); log faylı ancaq Log Backup edildikdə kəsilir. Əgər log backup alınmazsa, LDF faylı yüzlərlə gigabayt böyüyərək diski tam doldurur və baza donur.",
+    "followUps": [
+      "Tail of the Log backup nədir?",
+      "Baza 'LOG_FULL' xətası verəndə ilk təcili addım nə olmalıdır?"
+    ]
+  },
+  {
+    "id": "qa-mssql-05",
+    "category": "SQL Server",
+    "difficulty": "Medium",
+    "question": "Temp Table (#temp) ilə Table Variable (@table) arasındakı fərqlər hansılardır?",
+    "answer": "Hər ikisi fiziki olaraq tempdb verilənlər bazasından istifadə edir. Lakin #temp cədvəli üzərində tam statistika toplanır və indekslər yaradıla bilər, optimizer real sətir sayını bilərək düzgün join seçir. @table üzərində isə statistika olmur; SQL Server onun həmişə cəmi 1 sətir olduğunu fərz edir (Fixed 1-Row Estimate). Əgər daxilində 100,000 sətir varsa, optimizer yanlışlıqla Nested Loops seçərək sorğunun donmasına səbəb olur. Həmçinin, istifadəçi tranzaksiyasında ROLLBACK baş verdikdə #temp geri qayıdır, @table isə geri qayıtmır.",
+    "followUps": [
+      "SQL Server 2019-da Table Variable Deferred Compilation nəyi dəyişdi?",
+      "Qlobal müvəqqəti cədvəl (##temp) nədir?"
+    ]
+  },
+  {
+    "id": "qa-mssql-06",
+    "category": "SQL Server",
+    "difficulty": "Hard",
+    "question": "Scalar UDF-lər (User-Defined Functions) nə üçün SQL Server-də performans problemidir?",
+    "answer": "Scalar UDF tək bir dəyər qaytaran funksiyadır (məsələn, sığorta endirim faizini hesablayan funksiya). Əgər o, SELECT və ya WHERE daxilində 1 milyonluq cədvələ tətbiq olunarsa, SQL Server onu hər bir sətir üçün tək-tək, sətirbəsətir (Row-by-Row / RBAR) icra edir. Ən pisi odur ki, skalyar UDF bütün sorğunun paralel icra olunmasını (Parallelism) bloklayır və icra müddətini saniyələrdən dəqiqələrə qaldırır. SQL Server 2019-dan etibarən 'Scalar UDF Inlining' xüsusiyyəti gəldi, lakin daha köhnə versiyalarda həmişə skalyar UDF əvəzinə Inline Table-Valued Function (iTVF) və ya birbaşa JOIN istifadə olunmalıdır.",
+    "followUps": [
+      "Inline Table-Valued Function (iTVF) ilə Multi-Statement TVF arasındakı fərq nədir?",
+      "UDF Inlining hansı hallarda işləmir?"
+    ]
+  },
+  {
+    "id": "qa-mssql-07",
+    "category": "SQL Server",
+    "difficulty": "Hard",
+    "question": "Parameter Sniffing nədir, nə vaxt fəlakətə çevrilir və necə həll olunur?",
+    "answer": "Stored Procedure ilk dəfə icra olunarkən ötürülən parametr dəyərinin histoqramına uyğun icra planı hazırlanır və Plan Cache-ə yazılır. Əgər ilk parametr cəmi 5 sətir qaytaran nadir dəyərdirsə, optimizer Index Seek və Nested Loops planı seçir. Növbəti dəfə prosedur 2 milyon sətir qaytaran parametr ilə çağırıldıqda, həmin keşlənmiş Nested Loops planı işlədilir və sorğu saatlarla donub qalır. Həll yolları: 1) Yalnız həmin sorğuya 'OPTION (RECOMPILE)' vermək; 2) 'OPTIMIZE FOR (@Status = 'Active')' və ya 'OPTIMIZE FOR UNKNOWN' tətbiq etmək; 3) Parametri prosedur daxilində yerli dəyişənə mənimsətmək.",
+    "followUps": [
+      "Niyə bütün prosedura 'WITH RECOMPILE' vermək tövsiyə olunmur?",
+      "Query Store vasitəsilə yaxşı planı necə dondurmaq (force etmək) olar?"
+    ]
+  },
+  {
+    "id": "qa-mssql-08",
+    "category": "SQL Server",
+    "difficulty": "Medium",
+    "question": "Covering index nədir və 'INCLUDE' klauzulasi Key Lookup xərcini necə aradan qaldırır?",
+    "answer": "Covering index — bir sorğunun SELECT, WHERE, JOIN və ORDER BY hissələrində tələb olunan BÜTÜN sütunları özündə saxlayan indeksdir. Əgər Non-Clustered indeksdə sorğunun istədiyi bir sütun yoxdursa, SQL Server həmin sütunu tapmaq üçün əsas cədvələ gedib əlavə oxuma edir (Key Lookup / RID Lookup). 'INCLUDE (Col1, Col2)' yazdıqda həmin sütunlar indeksin B-Tree yarpaq səviyyəsinə əlavə olunur, lakin indeksin açarına daxil edilmir. Bu, indeksin B-Tree ölçüsünü şişirtmədən sorğunu 100% indeksdən cavablandırmağa (Index Seek) imkan verir və Key Lookup-ı tam sıfırlayır.",
+    "code": {
+      "language": "sql",
+      "dialect": "T-SQL",
+      "snippet": "CREATE NONCLUSTERED INDEX IX_Policies_Covering \nON dbo.Policies (CustomerID, Status)\nINCLUDE (Premium, StartDate, EndDate);"
+    },
+    "followUps": [
+      "Niyə bütün sütunları indeksin açar hissəsinə (Key Columns) qoymuruq?",
+      "Filtered Index nədir və nə vaxt istifadə olunur?"
+    ]
+  },
+  {
+    "id": "qa-mssql-09",
+    "category": "SQL Server",
+    "difficulty": "Medium",
+    "question": "Query Store nədir və SQL Server-də hansı problemləri həll etməyə kömək edir?",
+    "answer": "Query Store SQL Server 2016-dan etibarən təqdim olunan və verilənlər bazasının 'qara qutusu' (Flight Data Recorder) adlanan daxili monitorinq alətidir. O, sorğuların icra planlarının tarixçəsini, icra müddətini, CPU, I/O və yaddaş sərfiyyatını avtomatik olaraq bazanın özündə qeyd edir. Server yenidən başladıqda Plan Cache təmizlənsə də, Query Store məlumatı itirmir. Əgər statistika dəyişməsi səbəbindən hər hansı sorğuda plan reqresiyası (Plan Regression - pisləşmə) baş verərsə, Query Store vasitəsilə köhnə uğurlu planı tək bir əmrlə dondurmaq ('sp_query_store_force_plan') mümkündür.",
+    "followUps": [
+      "Query Store-un bazaya əlavə yükü (overhead) neçə faizdir?",
+      "Query Store ilə Extended Events arasındakı fərq nədir?"
+    ]
+  },
+  {
+    "id": "qa-mssql-10",
+    "category": "SQL Server",
+    "difficulty": "Hard",
+    "question": "SQL Server-də 'sys.dm_exec_query_stats' və 'sys.dm_os_wait_stats' nəyi göstərir?",
+    "answer": "sys.dm_exec_query_stats — yaddaşdakı bütün keşlənmiş sorğuların aqreqat statistikasıdır; ən çox CPU (total_worker_time), ən çox I/O (total_logical_reads/writes) və ən uzun vaxt xərcləyən 'Top' sorğuları tapmaq üçün əsas DMV-dir. sys.dm_os_wait_stats isə server səviyyəsində bütün gözləmə növlərini göstərir. Məsələn, 'PAGEIOLATCH_SH' diskdən RAM-a məlumat oxunmasının ləngidiyini (I/O problemi və ya RAM çatışmazlığı), 'CXPACKET' paralel sorğu axınlarının bir-birini gözlədiyini (MAXDOP problemi), 'LCK_M_...' isə tranzaksiyaların kilidlənmə səbəbindən dayandığını bildirir.",
+    "followUps": [
+      "sys.dm_db_index_usage_stats nə üçün lazımdır?",
+      "sys.sql_expression_dependencies ilə obyekt asılılıqları necə çıxarılır?"
+    ]
+  }
+]

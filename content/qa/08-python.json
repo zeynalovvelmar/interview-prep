@@ -1,0 +1,98 @@
+[
+  {
+    "id": "qa-py-01",
+    "category": "Python",
+    "difficulty": "Easy",
+    "question": "Python-da Generator-lar və 'yield' nədir və Data Engineering-də böyük fayllarla işləyərkən niyə vacibdir?",
+    "answer": "Generator-lar bütün məlumatları bir anda RAM yaddaşına yükləmədən, hər dəfə yalnız tələb olunan tək bir elementi ardıcıl hesablayıb qaytaran xüsusi funksiyalardır; 'return' əvəzinə 'yield' açar sözündən istifadə edirlər. Adi funksiya 10GB-lıq CSV faylını siyahıya ('list') oxumağa cəhd etdikdə yaddaş tükənir (OOM xətası baş verir). Generator isə faylı sətirbəsətir (stream) axın kimi oxuyur, cari sətiri emal edir və yaddaşı boş saxlayır. Bu xüsusiyyət ETL boru kəmərlərində resurslara qənaət və sabitlik üçün ən vacib texnikadır.",
+    "code": {
+      "language": "python",
+      "dialect": "Python",
+      "snippet": "def stream_large_log(file_path):\n    \"\"\"10GB faylı sətir-sətir yaddaşı doldurmadan oxuyan generator\"\"\"\n    with open(file_path, 'r', encoding='utf-8') as f:\n        for line in f:\n            yield line.strip().split(',')\n\n# İstifadəsi:\nfor row in stream_large_log('claims_2026.csv'):\n    if row[2] == 'APPROVED':\n        process_claim(row)"
+    },
+    "followUps": [
+      "Generator expression (mötərizəli sintaksis `(x for x in data)`) ilə list comprehension arasındakı fərq nədir?",
+      "next() funksiyası və StopIteration xətası generator daxilində necə işləyir?"
+    ]
+  },
+  {
+    "id": "qa-py-02",
+    "category": "Python",
+    "difficulty": "Easy",
+    "question": "Python-da List, Tuple, Set və Dict arasındakı fərq, mutability və zaman mürəkkəbliyi (Big-O) necədir?",
+    "answer": "List ardıcıl, indekslənən və dəyişdirilə bilən (mutable) strukturdur; axtarış O(n) vaxt alır. Tuple siyahıya bənzəyir, lakin dəyişdirilə bilməz (immutable) və daha az yaddaş tutur; konfiqurasiya və dəyişməz qeydlər üçün idealdır. Set təkrarsız elementlər toplusudur, heş cədvəlinə əsaslandığı üçün 'in' axtarışı orta hesabla O(1) vaxt aparır. Dict isə açar-dəyər (key-value) cütlüklərini saxlayır, unikal açarlara görə anlıq O(1) axtarış və yeniləmə təmin edir. Data borularında unikal açarları yoxlamaq üçün siyahı yerinə həmişə Set və ya Dict istifadə olunmalıdır.",
+    "code": {
+      "language": "python",
+      "dialect": "Python",
+      "snippet": "# Unikal ID axtarışı zamanı fərq:\nvalid_ids_list = [101, 102, 103] # axtarış O(n) - yavaş\nvalid_ids_set = {101, 102, 103}   # axtarış O(1) - anlıq\n\nif 102 in valid_ids_set:\n    print('Müştəri tapıldı')"
+    },
+    "followUps": [
+      "Niyə list və ya dict set-in elementi və ya lüğətin açarı ola bilməz (Unhashable type)?",
+      "Python 3.7+-da lüğətin daxiletmə ardıcıllığını (insertion order) saxlaması necə təmin edilir?"
+    ]
+  },
+  {
+    "id": "qa-py-03",
+    "category": "Python",
+    "difficulty": "Medium",
+    "question": "Python GIL (Global Interpreter Lock) nədir və CPU-bound vs I/O-bound işlərdə nəzərə alınmalıdır?",
+    "answer": "GIL — CPython standart icra mühərrikində eyni vaxtda yalnız tək bir thread-in Python bayt-kodunu icra etməsini təmin edən qoruyucu kiliddir. Bu o deməkdir ki, riyazi hesablama və böyük data transformasiyaları kimi CPU-bound işlərdə çoxlu 'threading' istifadə etmək performansı artırmır; bunun üçün ayrı-ayrı proseslər və ayrı GIL yaradan 'multiprocessing' işlədilməlidir. Digər tərəfdən, API-dən data çəkmək, fayl yükləmək və ya məlumat bazasını gözləmək kimi I/O-bound işlərdə gözləmə müddətində GIL azad buraxıldığı üçün 'threading' və ya 'asyncio' çox yüksək sürətlənmə verir.",
+    "code": {
+      "language": "python",
+      "dialect": "Python",
+      "snippet": "from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor\n\n# I/O Bound iş (API sorğuları və bazadan oxuma): Threading idealdır\nwith ThreadPoolExecutor(max_workers=5) as executor:\n    results = executor.map(fetch_api_policy_data, endpoints)\n\n# CPU Bound iş (Ağır hesablama): Multiprocessing idealdır\nwith ProcessPoolExecutor(max_workers=4) as executor:\n    transformed = executor.map(heavy_cpu_transform, chunks)"
+    },
+    "followUps": [
+      "Python 3.13-də experimental olaraq gələn Free-threaded Python (no-GIL) haqqında nə bilirsən?",
+      "Niyə PySpark kimi alətlərdə GIL DE işlərinə birbaşa mane olmur (JVM worker-lər)?"
+    ]
+  },
+  {
+    "id": "qa-py-04",
+    "category": "Python",
+    "difficulty": "Easy",
+    "question": "Pandas DataFrame ilə PySpark DataFrame arasındakı fərq nədir və nə vaxt birindən digərinə keçmək lazımdır?",
+    "answer": "Pandas tək bir maşının RAM yaddaşında işləyən (in-memory, single-node) son dərəcə zəngin və rahat analitik kitabxanadır; əgər məlumat həcmi bir neçə yüz meqabayt və ya 1-2 giqabaytdırsa, Pandas ən sürətli və asan vasitədir. PySpark isə paylanmış klaster (multi-node cluster) üzərində işləyir və RAM-a sığmayan onlarla giqabayt və ya terabaytlıq nəhəng həcmləri emal etmək üçün nəzərdə tutulub. Məlumat həcmi tək maşının yaddaş həddini (məsələn, 8-16GB) aşdıqda və ya real-time streaming tələb olunduqda mütləq PySpark-a keçilməlidir; lakin kiçik konfiqurasiya və ya yekun KPI hesabatları üçün Pandas daha sadə və səmərəlidir.",
+    "code": {
+      "language": "python",
+      "dialect": "Python",
+      "snippet": "# Kiçik aggregat hesabatını driver-də Pandas-a çevirmək:\npd_kpi = spark_df.groupBy('branch').count().toPandas()\npd_kpi.plot(kind='bar') # Vizualizasiya"
+    },
+    "followUps": [
+      "Böyük PySpark DataFrame-ində toPandas() çağırmaq nə ilə nəticələnər?",
+      "Polars kitabxanası nədir və Pandas-a hansı üstünlükləri təklif edir?"
+    ]
+  },
+  {
+    "id": "qa-py-05",
+    "category": "Python",
+    "difficulty": "Medium",
+    "question": "Python Decorator nədir və Data Engineering boru kəmərlərində (ETL) necə tətbiq olunur?",
+    "answer": "Decorator — mövcud funksiyanın kodunu dəyişmədən onun davranışını genişləndirən və ya əlavə funksionallıq qatan yüksək dərəcəli (higher-order) funksiyadır ('@decorator_adi' sintaksisi ilə yazılır). Data Engineering-də dekoratorlar təkrarlanan infrastrukturu idarə etmək üçün çox geniş tətbiq olunur: məsələn, ETL funksiyasının icra müddətini ölçən '@timer', xəta baş verdikdə bazaya yenidən sorğu göndərən '@retry(max_attempts=3)' və ya funksiya giriş-çıxışını qeydə alan '@logger'. Bu, əsas biznes transformasiyası kodunu təmiz və anlaşıqlı saxlayır.",
+    "code": {
+      "language": "python",
+      "dialect": "Python",
+      "snippet": "import time\nfrom functools import wraps\n\ndef log_execution_time(func):\n    @wraps(func)\n    def wrapper(*args, **kwargs):\n        start = time.perf_counter()\n        result = func(*args, **kwargs)\n        elapsed = time.perf_counter() - start\n        print(f'[ETL LOG] {func.__name__} icra olundu: {elapsed:.2f} saniyə')\n        return result\n    return wrapper\n\n@log_execution_time\ndef extract_claims_data():\n    time.sleep(1) # Simulyasiya\n    return {'status': 'OK'}"
+    },
+    "followUps": [
+      "functools.wraps nə üçün vacibdir (funksiyanın __name__ və docstring-ini qorumaq)?",
+      "Arqument qəbul edən dekoratorlar necə yazılır?"
+    ]
+  },
+  {
+    "id": "qa-py-06",
+    "category": "Python",
+    "difficulty": "Medium",
+    "question": "Python ilə məlumat bazalarına qoşularkən Connection Pooling nə üçün vacibdir və necə idarə olunur?",
+    "answer": "Hər bir API sorğusu və ya data borusu tapşırığı üçün sıfırdan yeni verilənlər bazası bağlantısı (TCP handshake, SSL doğrulaması, autentifikasiya) açmaq həm çox vaxt aparır, həm də bazada resurs tükənməsinə ('too many connections' xətasına) səbəb olur. Connection Pooling əvvəlcədən hazırlanmış bağlantılar hovuzunu açıq saxlayır; hər hansı skript iş görəndə hovuzdan hazır bağlantı götürür, işi bitəndə isə bağlamaq əvəzinə hovuza geri qaytarır. Python-da bu məqsədlə 'SQLAlchemy' (QueuePool) və ya birbaşa 'psycopg2.pool.SimpleConnectionPool' istifadə olunur.",
+    "code": {
+      "language": "python",
+      "dialect": "Python",
+      "snippet": "from sqlalchemy import create_engine\n\n# Connection Pool ilə mühərrik yaratmaq (max 5 aktiv, 10 overflow)\nengine = create_engine(\n    'postgresql://user:pass@localhost:5432/ateshgah_db',\n    pool_size=5,\n    max_overflow=10,\n    pool_pre_ping=True # qopuq bağlantıları avtomatik yoxlayır\n)\n\nwith engine.connect() as conn:\n    result = conn.execute('SELECT COUNT(*) FROM core.dim_policy')"
+    },
+    "followUps": [
+      "pool_pre_ping nə edir və 'stale connection' problemini necə aradan qaldırır?",
+      "Çoxlu Airflow worker-ləri işlədikdə bazanın qabağında PgBouncer kimi alət niyə vacib olur?"
+    ]
+  }
+]

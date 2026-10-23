@@ -1,0 +1,217 @@
+[
+  {
+    "id": "qa-sql-01",
+    "category": "SQL",
+    "difficulty": "Medium",
+    "question": "Clustered və Non-Clustered index arasındakı fərq nədir və cədvəldə niyə yalnız 1 Clustered index ola bilər?",
+    "answer": "Clustered index cədvəlin sətirlərinin diskdə fiziki saxlanma ardıcıllığını təyin edir (B-Tree strukturunun ən aşağı 'Leaf' səviyyəsi birbaşa cədvəlin öz məlumat səhifələridir). Məlumat fiziki olaraq diskdə yalnız tək bir ardıcıllıqla düzülə bildiyi üçün cədvəldə yalnız 1 Clustered index ola bilər. Non-Clustered index isə kitabın sonundakı əlifba sırası göstəricisi kimidir: ayrıca bir strukturda açar dəyəri və həmin sətrin fiziki ünvanını (Row Locator) saxlayır. Cədvəldə ehtiyaca uyğun olaraq çoxlu Non-Clustered index ola bilər.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Clustered index fiziki ardıcıllığı təyin edir\nCREATE CLUSTERED INDEX IX_Policies_PolicyID ON dbo.Policies(PolicyID);\n\n-- Non-Clustered index axtarışı sürətləndirir\nCREATE NONCLUSTERED INDEX IX_Policies_CustomerID ON dbo.Policies(CustomerID)\nINCLUDE (Premium, StartDate);"
+    },
+    "followUps": [
+      "Covering index nədir və Key Lookup xərcini necə aradan qaldırır?",
+      "Heap cədvəl nədir və nə vaxt Clustered index-siz saxlanıla bilər?"
+    ]
+  },
+  {
+    "id": "qa-sql-02",
+    "category": "SQL",
+    "difficulty": "Easy",
+    "question": "INNER JOIN ilə LEFT JOIN arasındakı fərq nədir və Anti-Join necə qurulur?",
+    "answer": "INNER JOIN yalnız hər iki cədvəldə birləşmə şərtinə uyğun gələn kəsişmə sətirlərini qaytarır. LEFT JOIN isə sol cədvəlin bütün sətirlərini saxlayır, sağ cədvəldən isə yalnız şərtə uyğun gələnləri gətirir; uyğunluq olmadıqda sağ tərəf NULL olur. Əgər sol cədvəldə olub sağ cədvəldə OLMAYAN sətirləri tapmaq istəyiriksə, LEFT JOIN edib 'WHERE right_table.id IS NULL' yazırıq; bu texnika Anti-Join adlanır. Böyük cədvəllərdə eyni nəticə üçün 'NOT EXISTS' yazmaq çox vaxt daha performanslı olur.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Heç bir sığorta hadisəsi (claim) qaldırmamış müştəriləri tapmaq (Anti-Join)\nSELECT c.CustomerID, c.FullName\nFROM dbo.Customers c\nLEFT JOIN dbo.Claims cl ON c.CustomerID = cl.CustomerID\nWHERE cl.ClaimID IS NULL;"
+    },
+    "followUps": [
+      "FULL OUTER JOIN hansı hallarda istifadə olunur?",
+      "LEFT JOIN zamanı sağ cədvəldə 1-çox əlaqə olduqda sətir sayının çoxalmasının (duplication) qarşısını necə alırsan?"
+    ]
+  },
+  {
+    "id": "qa-sql-03",
+    "category": "SQL",
+    "difficulty": "Easy",
+    "question": "WHERE və HAVING klauzulaları arasındakı fərq nədir?",
+    "answer": "WHERE klauzulasi sətirləri qruplaşdırma və aqreqasiyadan ƏVVƏL, fərdi sətir səviyyəsində filtrləyir. HAVING isə GROUP BY icra olunduqdan SONRA, aqreqat dəyərlərini (SUM, COUNT, AVG) filtrləmək üçün istifadə olunur. Məsələn, 'WHERE Premium > 100' tək-tək polisləri yoxlayır, 'HAVING SUM(Premium) > 10000' isə yalnız ümumi cəmi 10,000-dən çox olan qrupları saxlayır. Performans üçün ilkin filtrləri həmişə mümkün qədər WHERE-də yazmaq lazımdır ki, GROUP BY daha az sətir üzərində işləsin.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "SELECT BranchID, COUNT(PolicyID) AS TotalPolicies, SUM(Premium) AS TotalPremium\nFROM dbo.Policies\nWHERE IsActive = 1 -- Əvvəlcə yalnız aktiv polislər süzülür\nGROUP BY BranchID\nHAVING SUM(Premium) > 50000; -- Yalnız cəmi 50,000-dən çox olan filiallar saxlanılır"
+    },
+    "followUps": [
+      "HAVING daxilində aqreqat olmayan sütun yazmaq olarmı?",
+      "WHERE daxilində SUM() istifadə etmək niyə sintaksis xətası verir?"
+    ]
+  },
+  {
+    "id": "qa-sql-04",
+    "category": "SQL",
+    "difficulty": "Easy",
+    "question": "UNION ilə UNION ALL arasındakı fərq nədir və nə vaxt hansı seçilməlidir?",
+    "answer": "Hər iki operator iki və ya daha çox sorğunun nəticələrini şaquli olaraq birləşdirir. Lakin UNION təkrar olunan (dublikat) sətirləri təmizləyir, UNION ALL isə bütün sətirləri olduğu kimi saxlayır. Dublikatları tapmaq üçün UNION arxa planda bütün nəticəni çeşidləyir (Sort / Distinct) və böyük məlumatlarda nəhəng CPU və yaddaş (tempdb/work_mem) xərcləyir. Əgər mənbələrin kəsişmədiyinə əminsinizsə və ya dublikatlar problem yaratmırsa, Data Engineering boru kəmərlərində HƏMİŞƏ UNION ALL seçilməlidir.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- İki filialın polislərini sürətli birləşdirmək\nSELECT PolicyNumber, CustomerID, Premium FROM dbo.Policies_Baku\nUNION ALL\nSELECT PolicyNumber, CustomerID, Premium FROM dbo.Policies_Ganja;"
+    },
+    "followUps": [
+      "UNION icra planında hansı ağır operatoru yaradır?",
+      "INTERSECT və EXCEPT operatorları necə işləyir?"
+    ]
+  },
+  {
+    "id": "qa-sql-05",
+    "category": "SQL",
+    "difficulty": "Medium",
+    "question": "ROW_NUMBER(), RANK() və DENSE_RANK() pəncərə funksiyalarının fərqi nədir?",
+    "answer": "Hər üç funksiya sətirləri müəyyən nizam üzrə nömrələyir, lakin eyni dəyərlər (tie) qarşılaşdıqda fərqli davranırlar. ROW_NUMBER() hər bir sətrə həmişə tək və unikal ardıcıl nömrə verir (1, 2, 3, 4). RANK() eyni dəyərlərə eyni sıra nömrəsi verir, lakin sonrakı nömrəni dublikatların sayı qədər buraxır (məsələn: 1, 2, 2, 4). DENSE_RANK() isə eyni dəyərlərə eyni nömrə versə də, heç bir nömrəni buraxmadan ardıcıl davam edir (məsələn: 1, 2, 2, 3). Deduplikasiya üçün həmişə ROW_NUMBER() seçilir.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "SELECT \n    PolicyID, Premium,\n    ROW_NUMBER() OVER (ORDER BY Premium DESC) AS rn,\n    RANK() OVER (ORDER BY Premium DESC) AS rnk,\n    DENSE_RANK() OVER (ORDER BY Premium DESC) AS dense_rnk\nFROM dbo.Policies;"
+    },
+    "followUps": [
+      "Ən yüksək sığorta haqqı ödəyən 'Top 3' unikal müştəri qrupunu tapmaq üçün hansı funksiya lazımdır?",
+      "NTILE(4) funksiyası nə iş görür?"
+    ]
+  },
+  {
+    "id": "qa-sql-06",
+    "category": "SQL",
+    "difficulty": "Medium",
+    "question": "Pəncərə funksiyalarında 'ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW' nə deməkdir?",
+    "answer": "Bu ifadə pəncərə çərçivəsini (Window Frame) təyin edir və kümülyativ cəm (Running Total) hesablamaq üçün istifadə olunur. Mənası: cari sətir üçün hesablama apararkən partisiya daxilindəki ən birinci sətirdən (UNBOUNDED PRECEDING) başlayaraq cari sətirə (CURRENT ROW) qədər olan bütün sətirləri əhatə et. Əgər çərçivə göstərilməsə, standart olaraq 'RANGE BETWEEN...' işləyir ki, bu da eyni dəyərli sətirləri birlikdə toplayaraq gözlənilməz nəticə verə bilər. Dəqiq maliyyə hesabatlarında həmişə ROWS çərçivəsi dəqiq yazılmalıdır.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "SELECT \n    CustomerID, PaymentDate, Amount,\n    SUM(Amount) OVER(\n        PARTITION BY CustomerID \n        ORDER BY PaymentDate ASC\n        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n    ) AS RunningTotalAmount\nFROM dbo.Payments;"
+    },
+    "followUps": [
+      "ROWS ilə RANGE arasındakı daxili fərq nədir?",
+      "Son 3 günün hərəkətli ortalamasını (Moving Average) necə yazarsan?"
+    ]
+  },
+  {
+    "id": "qa-sql-07",
+    "category": "SQL",
+    "difficulty": "Medium",
+    "question": "LAG() və LEAD() funksiyaları nə üçün istifadə olunur?",
+    "answer": "LAG() cari sətirdən əvvəlki, LEAD() isə sonrakı sətirlərin dəyərlərini gətirmək üçün istifadə olunan analitik pəncərə funksiyalarıdır. Bu funksiyalar cədvəli özü-özünə birləşdirmədən (Self-Join etmədən) zaman sıralarını və dəyişiklikləri müqayisə etməyə imkan verir. Məsələn, sığorta müştərisinin bu ilki polisini keçən ilki polisi ilə tutuşdurub qiymət artımını hesablamaq üçün LAG(Premium, 1) tətbiq olunur. Nəticədə həm sorğu çox qısa və oxunaqlı olur, həm də I/O xərci minimal qalır.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "SELECT \n    CustomerID, IssueYear, Premium,\n    LAG(Premium, 1) OVER(PARTITION BY CustomerID ORDER BY IssueYear) AS PrevYearPremium,\n    Premium - LAG(Premium, 1) OVER(PARTITION BY CustomerID ORDER BY IssueYear) AS DiffFromLastYear\nFROM dbo.CustomerAnnualPolicies;"
+    },
+    "followUps": [
+      "LAG funksiyasında ilk sətir üçün NULL əvəzinə default dəyər qoymaq olarmı?",
+      "FIRST_VALUE() və LAST_VALUE() funksiyaları nə edir?"
+    ]
+  },
+  {
+    "id": "qa-sql-08",
+    "category": "SQL",
+    "difficulty": "Hard",
+    "question": "Rekursiv CTE (Recursive Common Table Expression) nədir və hansı ssenaridə istifadə etmisən?",
+    "answer": "Rekursiv CTE öz-özünü təkrar çağıran və iyerarxik (ağacvari) məlumatları açmaq üçün istifadə olunan xüsusi sorğudur. O, iki hissədən ibarətdir: Anchor Member (əsas başlanğıc sətirləri, məsələn ən yuxarı rəhbər) və Recursive Member (əvvəlki nəticəyə JOIN edərək növbəti səviyyəni gətirən sorğu); onlar UNION ALL ilə birləşdirilir. Mən bunu sığorta agentlikləri şəbəkəsinin və ya baş ofis-filial iyerarxiyasının səviyyələrini və tam yolunu (Path) çıxarmaq üçün istifadə etmişəm. Sonsuz dövrün (Infinite Loop) qarşısını almaq üçün təhlükəsizlik şərti (məsələn MAXRECURSION) qoyulmalıdır.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "WITH AgencyTree AS (\n    SELECT AgencyID, AgencyName, ParentAgencyID, 1 AS Level\n    FROM dbo.Agencies WHERE ParentAgencyID IS NULL -- Anchor\n    UNION ALL\n    SELECT child.AgencyID, child.AgencyName, child.ParentAgencyID, parent.Level + 1\n    FROM dbo.Agencies child\n    INNER JOIN AgencyTree parent ON child.ParentAgencyID = parent.AgencyID -- Recursive\n)\nSELECT * FROM AgencyTree;"
+    },
+    "followUps": [
+      "PostgreSQL-də rekursiv CTE yazarkən 'WITH RECURSIVE' açar sözü niyə vacibdir?",
+      "Təqvim cədvəlində (DimDate) ardıcıl günləri rekursiv CTE ilə necə generasiya etmək olar?"
+    ]
+  },
+  {
+    "id": "qa-sql-09",
+    "category": "SQL",
+    "difficulty": "Medium",
+    "question": "NOT IN ilə NOT EXISTS arasındakı fərq nədir və 'NULL' tələsi nədir?",
+    "answer": "NOT IN alt-sorğuda olan hər bir dəyərlə bərabərliyi yoxlayır; əgər alt-sorğu nəticəsində bircə dənə belə NULL dəyər varsa, SQL-in 3-dəyərli məntiqinə (True, False, Unknown) görə bütün şərt 'UNKNOWN' olur və sorğu HEÇ BİR sətir qaytarmır. NOT EXISTS isə yalnız uyğunluğun olub-olmamasını (Boolean) yoxlayır və NULL dəyərlərdən təsirlənmir. Buna görə də xarici açarların və ya əlaqəsiz sətirlərin axtarışında həmişə NOT EXISTS istifadə olunmalıdır. Həmçinin, optimizer çox vaxt NOT EXISTS-i Anti-Semi-Join kimi daha effektiv icra edir.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- TƏHLÜKƏSİZ VƏ DOĞRU:\nSELECT c.CustomerID, c.FullName\nFROM dbo.Customers c\nWHERE NOT EXISTS (\n    SELECT 1 FROM dbo.Policies p \n    WHERE p.CustomerID = c.CustomerID\n);"
+    },
+    "followUps": [
+      "SQL-də üç-qiymətli məntiq (Three-Valued Logic) nədir?",
+      "EXISTS daxilində 'SELECT 1' ilə 'SELECT *' arasında performans fərqi varmı?"
+    ]
+  },
+  {
+    "id": "qa-sql-10",
+    "category": "SQL",
+    "difficulty": "Medium",
+    "question": "Korrelyasiyalı alt-sorğu (Correlated Subquery) nədir və performansa təsiri nədir?",
+    "answer": "Korrelyasiyalı alt-sorğu — daxili sorğunun xarici sorğunun cari sətrindəki sütundan asılı olduğu sorğudur. Müstəqil alt-sorğulardan fərqli olaraq, o, tək bir dəfə icra olunmur; xarici sorğunun hər bir sətri üçün təkrar-təkrar icra olunur (Nested Loop kimi). Böyük cədvəllərdə (məsələn, 1 milyonluq sığorta hadisələri) bu, milyon dəfə daxili sorğunun işə düşməsinə və dəhşətli performans itkisinə səbəb olur. Çox vaxt belə sorğuları Window funksiyaları və ya qabaqcadan aqreqasiya edilmiş 'JOIN' ilə əvəzləmək lazımdır.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Hər filial üzrə orta məbləğdən yüksək polislər (Window funksiyası ilə optimallaşdırma):\nWITH BranchAvg AS (\n    SELECT PolicyID, BranchID, Premium,\n           AVG(Premium) OVER(PARTITION BY BranchID) AS AvgBranchPremium\n    FROM dbo.Policies\n)\nSELECT * FROM BranchAvg WHERE Premium > AvgBranchPremium;"
+    },
+    "followUps": [
+      "Korrelyasiyalı alt-sorğunu JOIN-ə çevirməyə optimizer necə kömək edir (Subquery Unnesting)?",
+      "CROSS APPLY və LATERAL nədir?"
+    ]
+  },
+  {
+    "id": "qa-sql-11",
+    "category": "SQL",
+    "difficulty": "Easy",
+    "question": "Verilənlər bazasında tranzaksiya və ACID prinsipləri nə deməkdir?",
+    "answer": "Tranzaksiya — verilənlər bazasında vahid məntiqi iş parçası kimi icra olunan bir və ya bir neçə SQL əməliyyatıdır. ACID isə bu əməliyyatların etibarlılığını təmin edən 4 qızıl qaydadır: Atomicity (bütün addımlar ya tam icra olunur, ya da tam ləğv edilir - All-or-Nothing), Consistency (baza bütün qayda və constraint-ləri qoruyaraq yalnız düzgün vəziyyətə keçir), Isolation (paralel işləyən əməliyyatlar bir-birinin yarımçıq vəziyyətini görmür), Durability (təsdiqlənmiş 'COMMIT' məlumatı elektrik kəsilsə belə diskdən itmir). Məsələn, sığorta ödənişi qəbul olunanda həm müştərinin borcu azalmalı, həm də kassa balansı artmalıdır.",
+    "followUps": [
+      "Durability prinsipi daxildə necə təmin olunur (WAL/Transaction Log)?",
+      "Tranzaksiya zamanı ROLLBACK əmri nə edir?"
+    ]
+  },
+  {
+    "id": "qa-sql-12",
+    "category": "SQL",
+    "difficulty": "Medium",
+    "question": "Read Committed ilə Repeatable Read izolyasiya səviyyələri arasındakı fərq nədir?",
+    "answer": "Read Committed səviyyəsində yalnız COMMIT olunmuş məlumatlar oxunur və çirkli oxuma (Dirty Read) baş vermir; lakin eyni tranzaksiya daxilində eyni sətir təkrar oxunduqda başqa tranzaksiya onu dəyişib təsdiqləyibsə, fərqli nəticə görünə bilər (Non-repeatable Read anomaliyası). Repeatable Read səviyyəsində isə tranzaksiyanın oxuduğu bütün sətirlər kilidlənir (və ya versiyası qorunur) və tranzaksiya bitənə qədər həmin sətirləri heç kim dəyişə bilməz. Lakin Repeatable Read səviyyəsində digər tranzaksiyalar cədvələ YENİ sətir əlavə edə bilər ki, bu da Phantom Read (kabus oxuma) anomaliyası yaradır. Ən yüksək izolyasiya isə Serializable-dır.",
+    "followUps": [
+      "Dirty Read nədir və hansı izolyasiya səviyyəsində baş verir?",
+      "Snapshot Isolation nədir və ənənəvi kilidlərdən fərqi nədir?"
+    ]
+  },
+  {
+    "id": "qa-sql-13",
+    "category": "SQL",
+    "difficulty": "Medium",
+    "question": "Deadlock nədir və SQL-də onun qarşısını almaq üçün hansı qaydalara əməl edilməlidir?",
+    "answer": "Deadlock (dalana dirənmə) — iki və ya daha çox tranzaksiyanın bir-birinin kilidlədiyi resursları qarşılıqlı olaraq gözlədiyi və heç birinin irəliləyə bilmədiyi vəziyyətdir (məsələn, Tranzaksiya A Cədvəl 1-i kilidləyib Cədvəl 2-ni istəyir, Tranzaksiya B isə Cədvəl 2-ni kilidləyib Cədvəl 1-i istəyir). Verilənlər bazası bunu aşkar edib onlardan birini xəta ilə ləğv edir (Deadlock Victim). Qarşısını almaq üçün: 1) Bütün tətbiq və prosedurlarda cədvəllərə həmişə eyni ardıcıllıqla müraciət edilməlidir; 2) Tranzaksiyalar mümkün qədər qısa tutulmalıdır; 3) Müvafiq indekslərlə axtarış vaxtı və kilid diapazonu azaldılmalıdır.",
+    "followUps": [
+      "SQL Server-də DEADLOCK_PRIORITY parametrini necə təyin edirlər?",
+      "Lock Escalation (kilid pillələnməsi) nədir?"
+    ]
+  },
+  {
+    "id": "qa-sql-14",
+    "category": "SQL",
+    "difficulty": "Easy",
+    "question": "Verilənlər bazasında 1NF, 2NF və 3NF normallaşdırma formaları nədir?",
+    "answer": "Normallaşdırma — OLTP verilənlər bazasında məlumat təkrarını (redundancy) azaltmaq və bütövlüyü qorumaq üçün tətbiq olunan cədvəl dizayn qaydalarıdır. 1NF (Birinci Normal Forma) hər sütunda yalnız bölünməz atomar dəyərlərin olmasını və təkrarlanan massivlərin olmamasını tələb edir. 2NF 1NF-in şərtlərini ödəməli və qeyri-açar sütunların mürəkkəb ilkin açardan (Composite PK) qismən deyil, tam asılı olmasını təmin edir. 3NF isə 2NF-in şərtlərini ödəməli və heç bir tranzitiv asılılıq olmamalıdır; yəni qeyri-açar sütun digər qeyri-açar sütundan asılı olmamalıdır (məsələn, müştəri cədvəlində rayon adının rayon kodundan asılı olması ayrı cədvələ çıxarılmalıdır).",
+    "followUps": [
+      "BCNF (Boyce-Codd Normal Form) nədir?",
+      "Həddindən artıq normallaşdırmanın (Over-normalization) hansı mənfi cəhəti var?"
+    ]
+  },
+  {
+    "id": "qa-sql-15",
+    "category": "SQL",
+    "difficulty": "Medium",
+    "question": "Denormallaşdırma (Denormalization) nədir və analitik sistemlərdə nə üçün tətbiq olunur?",
+    "answer": "Denormallaşdırma — normallaşdırılmış cədvəllərin məqsədli şəkildə ehtiyat atributlarla zənginləşdirilməsi və ya birləşdirilməsi prosesidir. OLTP bazalarında normallaşdırma əla olsa da, analitik sorğularda (OLAP / DWH) 10-15 cədvəli JOIN etmək sorğuları iflic edir. Denormallaşdırma sayəsində tez-tez istifadə olunan atributlar (məsələn, müştərinin adı, rayonu, avtomobil markası) birbaşa analitik cədvələ daxil edilir. Nəticədə oxuma və aqreqasiya sürəti dəfələrlə artır, lakin saxlama sahəsi bir qədər çoxalır və yeniləmə zamanı data ardıcıllığına ETL səviyyəsində nəzarət edilməlidir.",
+    "followUps": [
+      "Star Schema ilə 3NF arasındakı əsas fərq nədir?",
+      "Denormallaşdırmanın Data Lakehouse-da Parquet formatı ilə birlikdə istifadə üstünlüyü nədir?"
+    ]
+  }
+]

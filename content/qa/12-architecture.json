@@ -1,0 +1,66 @@
+[
+  {
+    "id": "qa-arch-01",
+    "category": "Architecture",
+    "difficulty": "Medium",
+    "question": "Lambda və Kappa arxitekturaları arasındakı fərq nədir və müasir Lakehouse bu problemi necə sadələşdirir?",
+    "answer": "Lambda arxitekturası məlumatı eyni vaxtda iki ayrı yola bölür: 'Batch layer' (böyük həcmləri gecə dəqiq hesablayan Hadoop/Spark) və 'Speed layer' (real-time axınları minimal gecikmə ilə emal edən Storm/Flink); çatışmazlığı odur ki, eyni biznes məntiqi iki fərqli dildə və iki ayrı kod bazasında yazılmalı idi. Kappa arxitekturası batch qatını aradan qaldıraraq hər şeyi vahid bir axın (stream-first: Kafka + Flink/Spark Streaming) kimi emal etməyi təklif etdi. Müasir Lakehouse (Delta/Iceberg) isə həm axın, həm də batch əməliyyatlarını eyni cədvəl faylları üzərində vahid API ilə təmin edərək hər iki arxitekturanın mürəkkəbliyini xeyli azaltdı.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Lambda: 2 ayrı kod bazası (Batch SQL + Stream Java/Scala) -> Xərc və mürəkkəblik çoxdur\n-- Kappa: Tək axın mühərriki (Kafka -> Stream Engine -> Serving)\n-- Lakehouse: Vahid cədvəl (Delta Lake) həm streaming append, həm də batch SQL oxunuşu dəstəkləyir"
+    },
+    "followUps": [
+      "Kappa arxitekturasında keçmiş məlumatları yenidən hesablamaq (reprocessing) üçün nə edilir?",
+      "Niyə sığorta şirkətində bəzi hesabatlar üçün təmiz batch ETL tamamilə kifayətdir?"
+    ]
+  },
+  {
+    "id": "qa-arch-02",
+    "category": "Architecture",
+    "difficulty": "Easy",
+    "question": "ETL ilə ELT arasındakı fərq nədir və müasir platformalarda niyə ELT üstünlük təşkil edir?",
+    "answer": "Klassik ETL-də (Extract-Transform-Load) məlumatlar mənbədən çıxarılır, xüsusi ETL serverinin yaddaşında (məsələn, Informatica və ya Python skripti) ağır hesablamalarla təmizlənir və yalnız hazır son nəticə anbara yüklənir. ELT-də (Extract-Load-Transform) isə xammal məlumatlar olduğu kimi birbaşa güclü hədəf anbara (PostgreSQL, Snowflake, BigQuery və ya Lakehouse) yüklənir, transformasiya isə anbarın öz daxili hesablama gücündən istifadə edilərək SQL/dbt vasitəsilə aparılır. Müasir dövrdə saxlama xərclərinin kəskin ucuzlaşması və verilənlər bazalarının hesablama gücünün artması səbəbindən ELT daha elastik, sürətli və xammal məlumatı itirməyən ən yaxşı standart hesab olunur.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- ELT Yanaşması:\n-- 1. E & L: Mənbədən birbaşa raw cədvələ yükləmə\n-- 2. T: SQL və ya dbt ilə daxildə transformasiya:\nINSERT INTO core.fact_policy_sales\nSELECT \n    date_key,\n    customer_key,\n    premium * 1.18 AS gross_premium\nFROM staging.raw_policies;"
+    },
+    "followUps": [
+      "Məxfi fərdi məlumatlar (PII) olduqda ELT zamanı maskalama harada edilməlidir?",
+      "dbt (data build tool) ELT yanaşmasında hansı rolu oynayır?"
+    ]
+  },
+  {
+    "id": "qa-arch-03",
+    "category": "Architecture",
+    "difficulty": "Medium",
+    "question": "Data Mesh nədir və mərkəzləşdirilmiş Data Warehouse / Lakehouse yanaşmasından nə ilə fərqlənir?",
+    "answer": "Data Mesh texniki alət deyil, təşkilati və memarlıq paradiqmasıdır. Ənənəvi mərkəzləşdirilmiş modeldə bütün şirkətin məlumatlarını tək bir mərkəzi data mühəndisliyi komandası yığır və idarə edir; bu zaman data komandası darboğaza çevrilir. Data Mesh 4 təməl prinsipə əsaslanır: 1) 'Domain Ownership' — məlumatlara həmin sahəni ən yaxşı bilən biznes komandası (məsələn, Sığorta Satışı komandası, Anderraytinq komandası) sahiblik edir; 2) 'Data as a Product' — məlumat daxili məhsul kimi keyfiyyətli təqdim olunur; 3) 'Self-serve Data Platform' — mərkəzi data mühəndisləri infrastruktur təqdim edir; 4) 'Federated Governance' — vahid təhlükəsizlik və keyfiyyət standartları federativ idarə olunur.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Data Mesh Prinsipləri:\n-- Mərkəzi monolit boru YOXDUR\n-- Hər domen (Sales, Claims, Underwriting) öz data məhsulunu (Data Product) yaradır və paylaşır"
+    },
+    "followUps": [
+      "Kiçik və ya orta ölçülü şirkətlərdə Data Mesh tətbiq etmək niyə tövsiyə edilmir (komanda çatışmazlığı)?",
+      "Data Contract (Məlumat müqaviləsi) Data Mesh-də necə işləyir?"
+    ]
+  },
+  {
+    "id": "qa-arch-04",
+    "category": "Architecture",
+    "difficulty": "Medium",
+    "question": "Sığorta şirkətinin analitik platformasını sıfırdan dizayn etməli olsaydın, hansı sadə və effektiv arxitekturanı təklif edərdin?",
+    "answer": "Junior mühəndis olaraq şirkəti lazımsız mürəkkəbliyə və izafi xərclərə salmadan sadə, etibarlı və genişlənə bilən Medallion Lakehouse arxitekturasını təklif edərdim. Mənbə sistemlərdən (SQL Server əsas tranzaksiya bazası, CRM və Excel hesabatları) məlumatlar Airflow vasitəsilə cədvəl üzrə çəkilərək MinIO və ya S3 obyekt anbarında Bronze (xammal Parquet/Delta) qatına yığılar. PySpark və ya Python boruları ilə məlumat təmizlənib Silver qatına keçirilər və burada Atəşgah üçün SCD Type 2 dimensiyalar və faktlar qurular. Son Gold qatı və ya hesabat üçün isə PostgreSQL DWH (Star Schema) qidalanar və Power BI analitikləri birbaşa bu təmiz bazaya bağlanaraq zərərlilik (Loss Ratio) və satış panellərini izləyərlər.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Sadə və Etibarlı Sığorta Data Axını:\n-- [SQL Server / CRM] \n--       │ (Airflow Batch / CDC)\n--       ▼\n-- [MinIO / S3: Bronze] -> [Silver (PySpark Data Clean)] -> [Gold Star Schema]\n--       │\n--       ▼\n-- [PostgreSQL Analitik DWH] ──► [Power BI / Rəhbərlik Panelləri]"
+    },
+    "followUps": [
+      "Əgər gələcəkdə real-time sığorta hadisələri tələb olunarsa, bu arxitekturaya Kafka necə əlavə olunar?",
+      "Bu arxitekturada məlumatların ehtiyat nüsxəsi (Backup) və təhlükəsizliyi necə təmin edilər?"
+    ]
+  }
+]

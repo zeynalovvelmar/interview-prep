@@ -1,0 +1,82 @@
+[
+  {
+    "id": "qa-kf-01",
+    "category": "Kafka",
+    "difficulty": "Easy",
+    "question": "Apache Kafka-nın təməl arxitekturası (Broker, Topic, Partition, Producer, Consumer) necə işləyir?",
+    "answer": "Kafka paylanmış, hadisələrə əsaslanan (event-driven) yüksək buraxılış qabiliyyətinə malik axın (streaming) platformasıdır. 'Broker' məlumatları diskdə saxlayan və müştərilərə xidmət edən Kafka serveridir. 'Topic' hadisələrin göndərildiyi mantiqi kateqoriya və ya kanaldır. Məlumatın miqyaslanması və paralelliyi üçün hər bir Topic bir və ya bir neçə 'Partition'-a bölünür və mesajlar hər partisiya daxilində append-only commit log kimi sıralı saxlanılır. 'Producer' hadisələri mövzuya yazan tətbiq, 'Consumer' isə onları partisiya sırası ilə oxuyan tətbiqdir.",
+    "code": {
+      "language": "python",
+      "dialect": "Python",
+      "snippet": "# Sadə Producer nümunəsi (kafka-python / confluent-kafka):\nfrom kafka import KafkaProducer\nimport json\n\nproducer = KafkaProducer(\n    bootstrap_servers=['localhost:9092'],\n    value_serializer=lambda v: json.dumps(v).encode('utf-8')\n)\nproducer.send('insurance-claims-topic', {'claim_id': 501, 'amount': 1200.0})"
+    },
+    "followUps": [
+      "Mesajın açarı (key) təyin edildikdə Kafka hansı partisiya alqoritmindən istifadə edir (murmur2 hash)?",
+      "Topic replication factor nədir və lider/follower replikaları necə işləyir?"
+    ]
+  },
+  {
+    "id": "qa-kf-02",
+    "category": "Kafka",
+    "difficulty": "Medium",
+    "question": "Topic Partisiyaları və Consumer Group anlayışı nədir və oxuma paralelliyi necə tənzimlənir?",
+    "answer": "Consumer Group eyni mövzudan məlumat oxuyan və iş yükünü aralarında bölüşdürən bir neçə istehlakçı (consumer) instansiyasının birliyidir. Əsas prinsip odur ki, qrup daxilində hər bir partisiya eyni vaxtda YALNIZ BİR consumer tərəfindən oxuna bilər; lakin tək bir consumer bir neçə partisiyanı oxuya bilər. Əgər bir Topic-də 4 partisiya varsa, həmin qrupda ən çox 4 consumer paralel işləyə bilər; 5-ci consumer əlavə olunarsa, o boş (idle) qalacaq. Buna görə də Kafka-da oxuma miqyaslanmasının və paralelliyinin yuxarı həddi birbaşa partisiyaların sayı ilə təyin olunur.",
+    "code": {
+      "language": "sql",
+      "dialect": "SQL",
+      "snippet": "-- Qayda: İstehlakçı Sayı <= Partisiya Sayı\n-- Topic: [P0] [P1] [P2] [P3] (4 partisiya)\n-- Consumer Group (4 consumer): C1->P0, C2->P1, C3->P2, C4->P3 (Maksimal paralel axın)\n-- Əgər 5-ci consumer qoşularsa: C5 bekar gözləyir (idle)!"
+    },
+    "followUps": [
+      "Qrupa yeni bir consumer qoşulduqda və ya biri çökdükdə nə baş verir (Rebalance)?",
+      "Cooperative Sticky Assignor rebalance fasilələrini necə azaldır?"
+    ]
+  },
+  {
+    "id": "qa-kf-03",
+    "category": "Kafka",
+    "difficulty": "Medium",
+    "question": "Offset nədir, Consumer Lag nəyi göstərir və lag artdıqda problemi necə həll edirsən?",
+    "answer": "Offset — partisiya daxilindəki hər bir mesaja verilən unikal və ardıcıl artan nömrədir; Consumer hansı ofsetə qədər oxuduğunu daxili '__consumer_offsets' mövzusuna commit edir. 'Consumer Lag' isə partisiyaya daxil olan ən son mesajın ofseti (Log End Offset) ilə Consumer-in oxuyub commit etdiyi cari ofset arasındakı fərqdir (gecikmə sayıdır). Əgər Consumer Lag sürətlə artırsa, deməli istehlakçı məlumatları istehsal sürətinə çatdıra bilmir. Həlli üçün: consumer kodunda ağır DB sorğularını batch etmək, partisiya sayını və paralel consumer sayını artırmaq, yaxud xəta verən blokları araşdırmaq lazımdır.",
+    "code": {
+      "language": "shell",
+      "dialect": "Shell",
+      "snippet": "# Mövcud gecikməni (lag) yoxlamaq üçün CLI əmri:\nkafka-consumer-groups.sh --bootstrap-server localhost:9092 \\\n  --describe --group insurance-etl-group"
+    },
+    "followUps": [
+      "Auto commit (enable.auto.commit=true) nə vaxt data itkisinə və ya duplikasiyaya səbəb ola bilər?",
+      "Lag-in sonsuz artmaması üçün monitoringdə (Prometheus/Grafana) hansı metrikaya baxılır?"
+    ]
+  },
+  {
+    "id": "qa-kf-04",
+    "category": "Kafka",
+    "difficulty": "Hard",
+    "question": "Delivery Semantics (At-most-once, At-least-once, Exactly-once) nədir və Idempotent Producer necə işləyir?",
+    "answer": "'At-most-once' zamanı mesaj qəbul olunandan dərhal əvvəl commit edilir; xəta olsa təkrar göndərilmir, yəni məlumat itkisi mümkündür, lakin duplikat olmur. 'At-least-once' ən geniş yayılan standartdır: mesaj tam emal olunandan sonra commit edilir; xəta olarsa təkrar emal edilir, məlumat heç vaxt itmir, lakin duplikatlar yarana bilər. 'Exactly-once' (EOS) isə həm itkini, həm də duplikatı aradan qaldırır. Kafka Producer tərəfində 'enable.idempotence=true' qoyulduqda hər bir mesaja PID (Producer ID) və Sequence Number verilir; şəbəkə qopsa və Producer təkrar göndərsə belə, Broker artıq qəbul etdiyi həmin nömrəli mesajı bir daha qeyd etmir.",
+    "code": {
+      "language": "python",
+      "dialect": "Python",
+      "snippet": "# Idempotent Producer konfiqurasiyası:\nproducer_conf = {\n    'bootstrap.servers': 'localhost:9092',\n    'enable.idempotence': True,\n    'acks': 'all',              # Bütün replikaların təsdiqini gözlə\n    'max.in.flight.requests.per.connection': 5\n}"
+    },
+    "followUps": [
+      "Transactional API (initTransactions, beginTransaction, commitTransaction) nə vaxt tələb olunur?",
+      "Hədəf verilənlər bazasında da exactly-once necə təmin edilir (İdempotent Upsert)?"
+    ]
+  },
+  {
+    "id": "qa-kf-05",
+    "category": "Kafka",
+    "difficulty": "Easy",
+    "question": "ZooKeeper ilə KRaft (Kafka Raft Metadata) arasındakı fərq nədir və Kafka 3+ versiyasında ZooKeeper-in çıxarılması nə verdi?",
+    "answer": "Köhnə versiyalarda Kafka klasterinin metadata idarəetməsi, broker siyahısı, partisiya lider seçimi və konfiqurasiyaları xarici Apache ZooKeeper klasterində saxlanılırdı; bu, əlavə bir sistem saxlamaq məcburiyyəti, metadata sinxronizasiya ləngiməsi və minlərlə partisiya olduqda performans həddi yaradırdı. Kafka 3.0+ ilə təqdim olunan KRaft rejimi ZooKeeper asılılığını tamamilə ləğv etdi. Artıq Kafka brokerləri daxili Raft konsensus protokolu vasitəsilə öz metadata mövzularını ('@metadata') özləri idarə edir. Bu, klasterin quraşdırılmasını çox sadələşdirdi, milyonlarla partisiyanı dəstəkləməyə imkan verdi və broker çökdükdə bərpa müddətini dəfələrlə qısaltdı.",
+    "code": {
+      "language": "shell",
+      "dialect": "Shell",
+      "snippet": "# KRaft rejimində klaster formatlamaq (ZooKeeper lazım deyil!):\nKAFKA_CLUSTER_ID=\"$(bin/kafka-storage.sh random-cluster-id)\"\nbin/kafka-storage.sh format -t $KAFKA_CLUSTER_ID -c config/kraft/server.properties\nbin/kafka-server-start.sh config/kraft/server.properties"
+    },
+    "followUps": [
+      "KRaft rejimində 'Controller' rollu brokerlərin vəzifəsi nədir?",
+      "Pet layihəndə Kafka-nı necə işə salmışdın (Docker Compose üzərində KRaft)?"
+    ]
+  }
+]
