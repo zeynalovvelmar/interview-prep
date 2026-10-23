@@ -45,6 +45,11 @@ Kodla işləməyə ehtiyac yoxdur! Bütün mətnlər `content/` qovluğundadır:
 
 Layihə tamamilə statikdir (heç bir server və ya DB tələb olunmur):
 
+- **Vercel (Ən çox tövsiyə olunan)**:
+  - Layihə daxilində hazır `vercel.json` konfiqurasiyası mövcuddur.
+  - **Metod A (GitHub ilə - Avtomatik):** Repozitoriyanı GitHub-a push edin, [Vercel](https://vercel.com) panelində "Add New Project" seçib repozitoriyanı bağlayın. Vercel avtomatik Vite framework-ü təyin edib bir kliklə deploy edəcək.
+  - **Metod B (Terminaldan):** `npx vercel` əmrini icra edin və təlimatları izləyin; production üçün: `npx vercel --prod`.
+
 - **GitHub Pages**:
   - `npm run build` əmri ilə `dist/` qovluğu formalaşır.
   - GitHub Actions və ya `gh-pages` vasitəsilə `dist` qovluğunu deploy edin. `vite.config.ts`-də `base: './'` tənzimləndiyi üçün istənilən alt-qovluqda işləyir.
