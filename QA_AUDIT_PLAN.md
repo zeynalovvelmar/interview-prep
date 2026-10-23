@@ -47,15 +47,15 @@ Bu sənəd saytdakı bütün dərs izahlarının, kodların və praktiki məşql
 
 ### Mərhələ 2: Yığcam Mövzular (Mövzu 07 - 15)
 Hər biri 1 səhifəlik xülasə formatında olan dərslərin auditi:
-- [ ] **Addım 2.1: `07-apache-spark-pyspark.md`** (Driver, Executor, Catalyst, Shuffle, Broadcast)
-- [ ] **Addım 2.2: `08-python-for-data-engineering.md`** (Generators, Decorators, Pool, GIL)
-- [ ] **Addım 2.3: `09-apache-airflow-orchestration.md`** (DAG, Idempotency, Sensors, XCom)
-- [ ] **Addım 2.4: `10-kafka-realtime-streaming.md`** (KRaft, Partitions, Lag, Consumer Groups)
-- [ ] **Addım 2.5: `11-nosql-and-rest-apis.md`** (MongoDB, Redis, CAP, Flattening)
-- [ ] **Addım 2.6: `12-data-quality-governance.md`** (Quality dimensions, Quarantine, PII)
-- [ ] **Addım 2.7: `13-architecture-standards-decisions.md`** (ADR, Standards, ELT vs ETL)
-- [ ] **Addım 2.8: `14-docker-linux-git-infra.md`** (Docker compose, Linux commands, Git)
-- [ ] **Addım 2.9: `15-insurance-domain-primer.md`** (Atəşgah sığorta biznes anlayışları, Loss Ratio)
+- [x] **Addım 2.1: `07-apache-spark-pyspark.md`** (Driver, Executor, Catalyst, Shuffle, Broadcast — Tamamlandı)
+- [x] **Addım 2.2: `08-python-for-data-engineering.md`** (Generators, Decorators, Pool, GIL — Tamamlandı)
+- [x] **Addım 2.3: `09-apache-airflow-orchestration.md`** (DAG, Idempotency, Sensors, XCom — Tamamlandı)
+- [x] **Addım 2.4: `10-kafka-realtime-streaming.md`** (KRaft, Partitions, Lag, Consumer Groups — Tamamlandı)
+- [x] **Addım 2.5: `11-nosql-and-rest-apis.md`** (MongoDB, Redis, CAP, Flattening — Tamamlandı)
+- [x] **Addım 2.6: `12-data-quality-governance.md`** (Quality dimensions, Quarantine, PII — Tamamlandı)
+- [x] **Addım 2.7: `13-architecture-standards-decisions.md`** (ADR, Standards, ELT vs ETL — Tamamlandı)
+- [x] **Addım 2.8: `14-docker-linux-git-infra.md`** (Docker compose, Linux commands, Git — Tamamlandı)
+- [x] **Addım 2.9: `15-insurance-domain-primer.md`** (Atəşgah sığorta biznes anlayışları, Loss Ratio — Tamamlandı)
 
 ---
 
