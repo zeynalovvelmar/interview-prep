@@ -37,7 +37,7 @@ Bu sənəd saytdakı bütün dərs izahlarının, kodların və praktiki məşql
   - Buffer Pool, Data/Log faylları, T-SQL obyektləri və Tempdb strukturları detallı cədvəllərlə yenidən tərtib edildi.
   - DMV-lər, Wait Stats və ilk 2 həftəlik inventarizasiya planı səliqəli dərslik formasına salındı.
 - [x] **Addım 1.5: `04-sql-server-postgresql-miqrasiya.md` (Tamamlandı)**
-  - Data type mapping cədvəli, T-SQL $\rightarrow$ PL/pgSQL çevrilmələri, çətin obyektlər və 4 səviyyəli Data Validation cədvəli səliqəyə salındı.
+  - Data type mapping cədvəli, T-SQL → PL/pgSQL çevrilmələri, çətin obyektlər və 4 səviyyəli Data Validation cədvəli səliqəyə salındı.
   - CDC Near-Zero Downtime, Cutover qrafiki və Rollback strategiyası aydın təlimat şəklinə gətirildi.
 - [x] **Addım 1.6: `06-lakehouse-table-formats.md` (Tamamlandı)**
   - Amazon S3 saxlama sinifləri, Row vs Columnar və Iceberg 3-qatlı metadata arxitekturası müqayisə cədvəllərinə salındı.
@@ -83,3 +83,22 @@ Hər biri 1 səhifəlik xülasə formatında olan dərslərin auditi:
   - `src/style.css`-ə `.markdown-body table` (border, padding, zebra background, overflow-x: auto) və blockquote stilləri əlavə edildi.
 - [x] **Addım 5.3: Çoxlu Ekran Testi (Responsive)** (Tamamlandı)
   - Kod blokları və cədvəllər fərdi daxili horizontal scroll ilə təmin edildi, mobil (375px), planşet (768px) və desktop (1440px) üzrə səhifə overflow-u qarşısı alındı.
+
+---
+
+### Mərhələ 6: Ətraflı Dərs Genişləndirmələri və Dərin Audit (Tamamlandı)
+- [x] **Addım 6.1: LaTeX və Ox Simvollarının Tam Təmizlənməsi** (Tamamlandı)
+  - Bütün layihədəki `$\rightarrow$`, `$ ightarrow$`, `$\leftarrow$` və əlaqəli artefaktlar Unicode istiqamət oxları (`→`, `←`) ilə əvəzləndi; `content-loader.ts` daxilində sızma əleyhinə qoruyucu təmizləyici regex-lər möhkəmləndirildi.
+- [x] **Addım 6.2: CV Layihələrində Siyahı və Başlıq Formatının Səliqəyə Salınması** (Tamamlandı)
+  - `01-lakehouse-medallion.md`, `02-crypto-streaming.md` və `03-banking-batch-star-schema.md` fayllarında `### Mərhələ` başlıqlarından sonra boş sətirlər və `- ` markerli standart siyahı formatı tətbiq edildi; birləşib tək sətirə düşmə xətası aradan qaldırıldı.
+- [x] **Addım 6.3: Mövzu 07 — Apache Spark & PySpark Əsasları Dərin Dərslik** (Tamamlandı)
+  - Klaster memarlığı (Driver, Executor, Unified Memory Manager), Lazy evaluation, Narrow vs Wide dependencies, Catalyst Optimizer, Shuffle və yaddaş idarəsi, PySpark Window funksiyaları, Salting və OOM həlləri, Atəşgah Sığorta konteksti və 3 suallıq mini-quiz əlavə edildi.
+- [x] **Addım 6.4: Mövzu 08 — Data Engineering üçün Python Əsasları Dərin Dərslik** (Tamamlandı)
+  - Generatorlar və `yield` ilə yaddaş qənaəti ($O(1)$), `@retry` və `@timer` dekoratorları, SQLAlchemy Connection Pool (`pool_pre_ping=True`), GIL, Threading vs Multiprocessing vs Asyncio, Context Managers, Atəşgah Sığorta konteksti və 3 suallıq mini-quiz əlavə edildi.
+- [x] **Addım 6.5: Mövzu 09 — Apache Airflow ilə İş Axınlarının Orkestrasiyası Dərin Dərslik** (Tamamlandı)
+  - Airflow komponentləri (Scheduler, Webserver, Worker, MetaDB, Triggerer), İdempotentlik və `{{ ds }}` tarixi, Backfill prinsipləri, poke vs reschedule sensorları, TaskFlow API (`@task`), XCom məhdudiyyətləri, Atəşgah Sığorta konteksti və 3 suallıq mini-quiz əlavə edildi.
+- [x] **Addım 6.6: Mövzu 10 — Apache Kafka & Real-Time Axın Əsasları Dərin Dərslik** (Tamamlandı)
+  - Broker, Topic, Partition, Offset, KRaft rejimi, Consumer Groups və Lag idarəsi (`kafka-consumer-groups.sh`), Exactly-once semantikası (`enable.idempotence=True`), PySpark Structured Streaming inteqrasiyası, Atəşgah Sığorta konteksti və 3 suallıq mini-quiz əlavə edildi.
+- [x] **Addım 6.7: Mövzu 14 — Docker, Linux & Git İnfrastruktur Əsasları Dərin Dərslik** (Tamamlandı)
+  - VM vs Docker konteyner (namespaces/cgroups), multi-stage Dockerfile, istehsalata hazır `docker-compose.yml` (Postgres 16 + MinIO S3 + Networks + Volumes), Data Mühəndisi üçün əsas Linux əmrləri (`grep`, `awk`, `tail -f`, `df -h`, `free -m`), sağlamlıq yoxlayan Bash skripti, Git komanda standartları, Atəşgah Sığorta konteksti və 3 suallıq mini-quiz əlavə edildi.
+

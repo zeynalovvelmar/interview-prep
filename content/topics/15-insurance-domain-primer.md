@@ -20,7 +20,8 @@ Data Mühəndisinin şirkətə real dəyər qatması üçün sığorta biznesini
 Biznes prosesi **Anderraytinq (Underwriting)** mərhələsi ilə başlayır: şirkət müştərinin riskini (avtomobilin yaşı, sürücülük təcrübəsi) qiymətləndirir və tarif təyin edir. Polis aktivləşdikdən sonra hadisə baş verərsə zərər tənzimlənməsi şöbəsi iddiaya baxır və ödəniş təsdiqlənir.
 
 Sığorta şirkətinin gəlirliliyini və dayanıqlığını ölçən ən kritik KPI **Zərərlilik Nisbətidir (Loss Ratio)**:
-$$\text{Loss Ratio} = \frac{\text{Ödənilmiş Zərərlər}}{\text{Toplanmış Sığorta Haqları}} \times 100\%$$
+
+**Loss Ratio (%) = (Ödənilmiş Zərərlər / Toplanmış Sığorta Haqları) × 100%**
 Normal halda bu göstərici 50%-70% civarında olmalıdır; 100%-dən yuxarı olması şirkətin zərərlə işlədiyini göstərir. Data mühəndisinin qurduğu cədvəllər rəhbərliyə məhz bu nisbəti hər filial və məhsul üzrə anlıq görmək imkanı verir.
 
 ## 2. Praktik SQL Metriki Nümunəsi

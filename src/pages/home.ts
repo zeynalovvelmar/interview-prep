@@ -66,7 +66,7 @@ export async function renderHomePage(): Promise<HTMLElement> {
     <section class="section-card">
       <div class="section-header">
         <div>
-          <h2 class="section-title">Vakansiya Tələbi $\rightarrow$ Hazırlıq Xəritəsi</h2>
+          <h2 class="section-title">Vakansiya Tələbi → Hazırlıq Xəritəsi</h2>
           <p class="section-subtitle">Dürüst özünüqiymətləndirmə: Güclü tərəflər və diqqət yetirilməli boşluqlar</p>
         </div>
       </div>
@@ -86,15 +86,15 @@ export async function renderHomePage(): Promise<HTMLElement> {
               <td><span class="readiness-badge badge-focus">Öyrənməliyəm</span></td>
               <td>
                 Production təcrübəm yoxdur; DMV-lər, Wait stats və asılılıq təhlilini nəzəri və Docker laboratoriyasında dərindən öyrənirəm.
-                <a href="#/topics/microsoft-sql-server" class="table-link">Mövzuya bax $\rightarrow$</a>
+                <a href="#/topics/microsoft-sql-server" class="table-link">Mövzuya bax →</a>
               </td>
             </tr>
             <tr>
-              <td><strong>SQL Server $\rightarrow$ PostgreSQL Miqrasiyası</strong></td>
+              <td><strong>SQL Server → PostgreSQL Miqrasiyası</strong></td>
               <td><span class="readiness-badge badge-focus">Öyrənməliyəm</span></td>
               <td>
-                Real miqrasiya etməmişəm; data tipləri mappingi, T-SQL $\rightarrow$ PL/pgSQL çevrilməsi, Cutover və Rollback strategiyasını hazırlayıram.
-                <a href="#/topics/sql-server-postgresql-miqrasiya" class="table-link">Mövzuya bax $\rightarrow$</a>
+                Real miqrasiya etməmişəm; data tipləri mappingi, T-SQL → PL/pgSQL çevrilməsi, Cutover və Rollback strategiyasını hazırlayıram.
+                <a href="#/topics/sql-server-postgresql-miqrasiya" class="table-link">Mövzuya bax →</a>
               </td>
             </tr>
             <tr>
@@ -102,7 +102,7 @@ export async function renderHomePage(): Promise<HTMLElement> {
               <td><span class="readiness-badge badge-mid">Orta – Güclü</span></td>
               <td>
                 CV Layihəmdə MinIO (S3-compatible) üzərində Medallion memarlığı və Delta Lake ilə işləmişəm; Iceberg nəzəriyyəsini mənimsəyirəm.
-                <a href="#/topics/lakehouse-ve-table-formatlari" class="table-link">Mövzuya bax $\rightarrow$</a>
+                <a href="#/topics/lakehouse-ve-table-formatlari" class="table-link">Mövzuya bax →</a>
               </td>
             </tr>
             <tr>

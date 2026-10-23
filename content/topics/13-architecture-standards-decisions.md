@@ -15,7 +15,7 @@ summary: "Memarlıq qərarlarının qeydiyyatı (ADR), adlandırma və qat stand
 
 ## 1. Qısa Xülasə (150-250 Söz)
 
-Məlumat platformasının uzunmüddətli dayanıqlılığı və komanda daxilində xaosun qarşısının alınması üçün vahid **Arxitektura Standartları** təyin olunmalıdır. Standartlara: cədvəl və sütun adlandırma qaydaları (məsələn, `stg_`, `dim_`, `fact_` prefiksləri, snake_case), qatlaşdırma (Bronze $\rightarrow$ Silver $\rightarrow$ Gold), saxlama formatları (Parquet/Delta) və partisiya strategiyaları (`year/month/day`) daxildir.
+Məlumat platformasının uzunmüddətli dayanıqlılığı və komanda daxilində xaosun qarşısının alınması üçün vahid **Arxitektura Standartları** təyin olunmalıdır. Standartlara: cədvəl və sütun adlandırma qaydaları (məsələn, `stg_`, `dim_`, `fact_` prefiksləri, snake_case), qatlaşdırma (Bronze → Silver → Gold), saxlama formatları (Parquet/Delta) və partisiya strategiyaları (`year/month/day`) daxildir.
 
 Böyük texnoloji seçimlər (məsələn, "Niyə Iceberg əvəzinə Delta Lake seçdik?" və ya "Niyə ELT yanaşmasına keçdik?") **ADR (Architecture Decision Record)** sənədlərində qeyd olunur. ADR dörd hissədən ibarətdir: **Status**, **Context** (problem), **Decision** (seçim) və **Consequences** (müsbət və mənfi nəticələr).
 

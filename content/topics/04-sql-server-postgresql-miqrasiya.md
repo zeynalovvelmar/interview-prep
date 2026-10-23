@@ -33,7 +33,7 @@ Təyyarə köhnə mühərriklə uçarkən, arxa planda yeni mühərrikə eyni ya
 > **Müsahibədə belə de:**
 > "Mən real istehsalatda təkbaşına SQL Server -> PostgreSQL miqrasiyasını icra etməmişəm, lakin strukturlaşdırılmış yanaşmam tam hazırdır:
 > 1) İnventarizasiya və asılılıq analizi (`sys.sql_expression_dependencies`).
-> 2) DDL çevrilməsi və tip uyğunlaşdırılması (`NVARCHAR` $\rightarrow$ `TEXT/VARCHAR`, `BIT` $\rightarrow$ `BOOLEAN`, `IDENTITY` $\rightarrow$ `GENERATED ALWAYS AS IDENTITY`).
+> 2) DDL çevrilməsi və tip uyğunlaşdırılması (`NVARCHAR` → `TEXT/VARCHAR`, `BIT` → `BOOLEAN`, `IDENTITY` → `GENERATED ALWAYS AS IDENTITY`).
 > 3) Tarixi məlumatın kütləvi yüklənməsi (`pgloader` və ya Spark JDBC).
 > 4) CDC (Debezium / AWS DMS) ilə delta dəyişikliklərin fasiləsiz replikasiyası.
 > 5) Məlumat bütövlüyünün ikiqat heş və cərgə sayı ilə sübutu (`MD5 / Checksum`).
@@ -70,7 +70,7 @@ Aşağıdakı diaqram Atəşgah Sığorta üçün nəzərdə tutulmuş kəsilmə
 
 ---
 
-### 2.2. Data Type Mapping Cədvəli (SQL Server $\rightarrow$ PostgreSQL)
+### 2.2. Data Type Mapping Cədvəli (SQL Server → PostgreSQL)
 
 | SQL Server Tipi | PostgreSQL Qarşılığı | Səbəb və Diqqət Yetirilməli Məqam |
 | :--- | :--- | :--- |
@@ -86,7 +86,7 @@ Aşağıdakı diaqram Atəşgah Sığorta üçün nəzərdə tutulmuş kəsilmə
 
 ---
 
-### 2.3. T-SQL $\rightarrow$ PL/pgSQL Sintaksis Çevrilmə Cədvəli
+### 2.3. T-SQL → PL/pgSQL Sintaksis Çevrilmə Cədvəli
 
 | Əməliyyat | Microsoft SQL Server (T-SQL) | PostgreSQL (PL/pgSQL) |
 | :--- | :--- | :--- |
@@ -132,7 +132,7 @@ Miqrasiya prosesinin rəsmi təsdiqi üçün 4 səviyyəli yoxlama aparılır:
 
 | Səviyyə | Yoxlama Növü | Yoxlama Qaydası | Qəbul Meyarı (Criteria) |
 | :--- | :--- | :--- | :--- |
-| **1-ci Səviyyə** | **Sətir Sayları (Row Counts)** | Bütün cədvəllər üzrə toplam sətir sayı müqayisə edilir | $N_{\text{MSSQL}} == N_{\text{PostgreSQL}}$ |
+| **1-ci Səviyyə** | **Sətir Sayları (Row Counts)** | Bütün cədvəllər üzrə toplam sətir sayı müqayisə edilir | MSSQL Sətir Sayı == PostgreSQL Sətir Sayı |
 | **2-ci Səviyyə** | **Maliyyə Aqreqatları (Sums)** | Sığorta haqları (`SUM(premium)`), iddia ödənişləri tutuşdurulur | 0.00 qəpik fərq |
 | **3-cü Səviyyə** | **Kriptoqrafik Heş (MD5 Checksum)** | Bütün sətirlər sütunlar üzrə birləşdirilib heşlənir | Heş kodları 100% bərabər olmalıdır |
 | **4-cü Səviyyə** | **Əlaqə Bütövlüyü (FK Integrity)** | Uşaq cədvəllərdə valideyni olmayan sətirlər axtarılır | 0 ədəd "yetim sətir" (Orphan row) |
@@ -147,7 +147,7 @@ Miqrasiya prosesinin rəsmi təsdiqi üçün 4 səviyyəli yoxlama aparılır:
 - **T - 15 dəqiqə:** Tətbiq xidmətləri texniki rejimə alınır (`Maintenance Mode`), SQL Server-də yeni yazmalar dayandırılır (`READ_ONLY`).
 - **T - 0 (Cutover Anı):** CDC buferinin boşalması gözlənilir (son dəqiqənin tranzaksiyaları PostgreSQL-ə yazılır). Tətbiqlərin `Connection String`-i PostgreSQL-ə yönləndirilir.
 - **T + 15 dəqiqə:** Smoke testlər icra olunur (Yeni polis satışı, müqavilə axtarışı, hesabat çıxarılması).
-- **T + 30 dəqiqə:** Sistem müştərilərə tam açılır. Tərs CDC (PostgreSQL $\rightarrow$ SQL Server) işə salınır.
+- **T + 30 dəqiqə:** Sistem müştərilərə tam açılır. Tərs CDC (PostgreSQL → SQL Server) işə salınır.
 
 #### Rollback (Geri Qayıdış) Zəmanəti
 Əgər keçiddən sonrakı ilk 24 saat ərzində PostgreSQL-də kritik arxitektura problemi aşkar edilərsə:

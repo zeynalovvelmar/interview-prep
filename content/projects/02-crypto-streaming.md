@@ -30,25 +30,29 @@ tags: ["Apache Kafka", "KRaft", "PySpark Streaming", "PostgreSQL", "Airflow", "G
 Sistem 4 əlaqəli mərhələ üzrə işləyir:
 
 ### Mərhələ 1: İnvestisiya Məlumatlarının İnqestiyası (Python Producer)
-* CoinGecko ictimai REST API-dən ən populyar kriptovalyuta cütlüklərinin (BTC, ETH, SOL) qiymət, 24 saatlıq həcm və bazar kapitalizasiyası məlumatlarını çəkən asinxron Python skripti yazdım.
-* API rate limitlərini (dəqiqədə maksimum sorğu sayını) aşmamaq üçün eksponensial geri çəkilmə (`exponential backoff`) və fasilə mexanizmi qurdum.
-* Alınan JSON payload-ları təmizlənərək `crypto-market-ticks` adlı Kafka mövzusuna (topic) JSON formatında göndərildi.
+
+- CoinGecko ictimai REST API-dən ən populyar kriptovalyuta cütlüklərinin (BTC, ETH, SOL) qiymət, 24 saatlıq həcm və bazar kapitalizasiyası məlumatlarını çəkən asinxron Python skripti yazdım.
+- API rate limitlərini (dəqiqədə maksimum sorğu sayını) aşmamaq üçün eksponensial geri çəkilmə (`exponential backoff`) və fasilə mexanizmi qurdum.
+- Alınan JSON payload-ları təmizlənərək `crypto-market-ticks` adlı Kafka mövzusuna (topic) JSON formatında göndərildi.
 
 ### Mərhələ 2: Hadisə Axını və Kafka Klasteri (KRaft Rejimi)
-* Klasteri Docker mühitində 3 brokerli arxitektura ilə qurdum. ZooKeeper əvəzinə Kafka 3.x ilə gələn daxili **KRaft (Kafka Raft Metadata)** rejimindən istifadə etdim.
-* Mövzu üçün 3 partisiya və 2 replikasiya faktoru təyin etdim ki, həm paralellik, həm də dözümlülük təmin olunsun.
-* Producer tərəfində `acks='all'` və `enable.idempotence=True` tətbiq edərək şəbəkə qopması zamanı dublikatların və data itkisinin qarşısını aldım.
+
+- Klasteri Docker mühitində 3 brokerli arxitektura ilə qurdum. ZooKeeper əvəzinə Kafka 3.x ilə gələn daxili **KRaft (Kafka Raft Metadata)** rejimindən istifadə etdim.
+- Mövzu üçün 3 partisiya və 2 replikasiya faktoru təyin etdim ki, həm paralellik, həm də dözümlülük təmin olunsun.
+- Producer tərəfində `acks='all'` və `enable.idempotence=True` tətbiq edərək şəbəkə qopması zamanı dublikatların və data itkisinin qarşısını aldım.
 
 ### Mərhələ 3: Axın Emalı (PySpark Structured Streaming)
-* PySpark-ın axın oxuyucusu (`readStream`) vasitəsilə Kafka mövzusuna bağlandım.
-* Gələn ikili (binary) mesaj dəyərini `from_json()` funksiyası və qabaqcadan təyin olunmuş `StructType` sxemi ilə strukturlaşdırdım.
-* 1 dəqiqəlik və 5 dəqiqəlik sürüşən zaman pəncərələri (`tumbling & sliding windows`) tətbiq edərək valyutalar üzrə ortalama qiymət və qiymət dəyişkənliyi (volatility) hesabladım.
-* Ən önəmlisi: `checkpointLocation` qeyd edərək emal olunan son Kafka ofsetlərinin vəziyyətini qorudum; bu, axın dayanıb yenidən başladıqda qaldığı yerdən davam etməyə imkan verdi.
+
+- PySpark-ın axın oxuyucusu (`readStream`) vasitəsilə Kafka mövzusuna bağlandım.
+- Gələn ikili (binary) mesaj dəyərini `from_json()` funksiyası və qabaqcadan təyin olunmuş `StructType` sxemi ilə strukturlaşdırdım.
+- 1 dəqiqəlik və 5 dəqiqəlik sürüşən zaman pəncərələri (`tumbling & sliding windows`) tətbiq edərək valyutalar üzrə ortalama qiymət və qiymət dəyişkənliyi (volatility) hesabladım.
+- Ən önəmlisi: `checkpointLocation` qeyd edərək emal olunan son Kafka ofsetlərinin vəziyyətini qorudum; bu, axın dayanıb yenidən başladıqda qaldığı yerdən davam etməyə imkan verdi.
 
 ### Mərhələ 4: Saxlama və Vizualizasiya (PostgreSQL & Grafana)
-* Emal olunmuş təmiz sətirlər `foreachBatch` metodu ilə PostgreSQL-də yaradılmış `realtime_crypto_metrics` cədvəlinə yazıldı.
-* Grafana paneli birbaşa PostgreSQL-ə qoşuldu və hər 5 saniyədən bir avtomatik sorğu göndərərək canlı qrafikləri yenilədi.
-* Bütün infrastruktura və köməkçi batch təmizləmələrinə nəzarət üçün arxa planda Apache Airflow DAG-ı inteqrasiya olundu.
+
+- Emal olunmuş təmiz sətirlər `foreachBatch` metodu ilə PostgreSQL-də yaradılmış `realtime_crypto_metrics` cədvəlinə yazıldı.
+- Grafana paneli birbaşa PostgreSQL-ə qoşuldu və hər 5 saniyədən bir avtomatik sorğu göndərərək canlı qrafikləri yenilədi.
+- Bütün infrastruktura və köməkçi batch təmizləmələrinə nəzarət üçün arxa planda Apache Airflow DAG-ı inteqrasiya olundu.
 
 ---
 

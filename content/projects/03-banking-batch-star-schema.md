@@ -30,28 +30,34 @@ tags: ["PySpark", "Apache Airflow", "MinIO (S3)", "Kimball Star Schema", "SCD Ty
 Layihə 4 əsas fazadan ibarətdir:
 
 ### Faza 1: Xammal İnqestiyası və Bronze Qatı
-* Bank filiallarından və əsas bank sistemindən (Core Banking) gündəlik ixrac olunan müştəri profilləri, hesab qalıqları və kart tranzaksiyaları MinIO S3 anbarına `bronze/year=YYYY/month=MM/day=DD/` partisiya strukturu ilə arxivləndi.
-* Airflow DAG-ı hər gecə saat 02:00-da işə düşərək yalnız müvafiq icra gününün (`{{ ds }}`) fayllarını hədəfə götürdü.
+
+- Bank filiallarından və əsas bank sistemindən (Core Banking) gündəlik ixrac olunan müştəri profilləri, hesab qalıqları və kart tranzaksiyaları MinIO S3 anbarına `bronze/year=YYYY/month=MM/day=DD/` partisiya strukturu ilə arxivləndi.
+- Airflow DAG-ı hər gecə saat 02:00-da işə düşərək yalnız müvafiq icra gününün (`{{ ds }}`) fayllarını hədəfə götürdü.
 
 ### Faza 2: Data Quality Qapıları və 5 Qüsurun İdarəsi (Silver Qatı)
+
 Xammal məlumat birbaşa etibarlı sayılmadığı üçün PySpark ilə 5 səviyyəli keyfiyyət filtri tətbiq etdim:
+
 1. **Deduplication (Təkrarsızlıq):** Eyni tranzaksiya identifikatoruna malik təkrarlar çıxarıldı.
 2. **Null Handling (Boşluqların İdarəsi):** Məcburi biznes xanaları (müştəri ID, tranzaksiya məbləği) boş olan sətirlər ləğv edildi.
 3. **Format & Domain Checks (Domen Yoxlamaları):** Hesab nömrələri və FIN formatları regex ilə yoxlandı, mənfi məbləğlər süzüldü.
 4. **Orphan FK Quarantine (Yetim Xarici Açarlar Karantini):** Əgər tranzaksiya qeydindəki müştəri ID-si mövcud müştəri reyestrində tapılmadısa, pipeline sınmadı; bu sətirlər araşdırılmaq üçün `quarantine_transactions` qovluğuna ayrıldı.
 5. **Timestamp Normalization:** Müxtəlif filiallardan fərqli saat qurşaqlarında gələn vaxtlar vahid UTC timestamp-ə çevrildi.
-* Təmizlənmiş məlumatlar Silver qatında Parquet formatında saxlanıldı.
+
+Təmizlənmiş məlumatlar Silver qatında Parquet formatında saxlanıldı.
 
 ### Faza 3: Kimball Star Schema və SCD Type 2 (Gold Qatı)
-* Analitik anbar üçün Ralph Kimball-ın DWH metodologiyası əsasında model qurdum:
-  * **Dimensiyalar:** `dim_customer`, `dim_account`, `dim_branch`, `dim_date`.
-  * **Fakt Cədvəli:** `fact_banking_transactions` (Grain: hər bir fərdi maliyyə tranzaksiyası).
-* Müştəri dimensiyasında **SCD Type 2** tətbiq etdim: müştəri filialını və ya statusunu dəyişdikdə köhnə sətrin `end_date`-i qapadıldı (`is_current = false`) və yeni Surrogate Key ilə cari sətir əlavə edildi.
-* Fakt cədvəlini dimensiya ilə birləşdirərkən tranzaksiya vaxtında qüvvədə olan dəqiq müştəri versiyasını tapmaq üçün vaxta həssas (`transaction_timestamp BETWEEN effective_date AND end_date`) JOIN tətbiq etdim.
+
+- Analitik anbar üçün Ralph Kimball-ın DWH metodologiyası əsasında model qurdum:
+  - **Dimensiyalar:** `dim_customer`, `dim_account`, `dim_branch`, `dim_date`.
+  - **Fakt Cədvəli:** `fact_banking_transactions` (Grain: hər bir fərdi maliyyə tranzaksiyası).
+- Müştəri dimensiyasında **SCD Type 2** tətbiq etdim: müştəri filialını və ya statusunu dəyişdikdə köhnə sətrin `end_date`-i qapadıldı (`is_current = false`) və yeni Surrogate Key ilə cari sətir əlavə edildi.
+- Fakt cədvəlini dimensiya ilə birləşdirərkən tranzaksiya vaxtında qüvvədə olan dəqiq müştəri versiyasını tapmaq üçün vaxta həssas (`transaction_timestamp BETWEEN effective_date AND end_date`) JOIN tətbiq etdim.
 
 ### Faza 4: Airflow Orkestrasiyası və İdempotentlik
-* Bütün axın Apache Airflow DAG-ı daxilində tapşırıqlar zəncirinə bağlandı: `wait_for_files >> ingest_bronze >> dq_silver >> build_scd2_gold >> run_audit`.
-* İdempotentliyi təmin etmək üçün hər bir task hədəf partisiya üzrə əvvəlcə həmin günün məlumatlarını təmizləyib (`overwrite partition`) sonra yazırdı. Nəticədə DAG-ı ardıcıl 5 dəfə təkrar işlətsək belə, yekun rəqəmlər tam sabit qalırdı.
+
+- Bütün axın Apache Airflow DAG-ı daxilində tapşırıqlar zəncirinə bağlandı: `wait_for_files >> ingest_bronze >> dq_silver >> build_scd2_gold >> run_audit`.
+- İdempotentliyi təmin etmək üçün hər bir task hədəf partisiya üzrə əvvəlcə həmin günün məlumatlarını təmizləyib (`overwrite partition`) sonra yazırdı. Nəticədə DAG-ı ardıcıl 5 dəfə təkrar işlətsək belə, yekun rəqəmlər tam sabit qalırdı.
 
 ---
 

@@ -76,14 +76,14 @@ export async function renderTopicDetailPage(slug: string): Promise<HTMLElement> 
         <nav class="topic-pagination" aria-label="Mövzular arası keçid">
           ${prevTopic ? `
             <a href="#/topics/${prevTopic.slug}" class="pagination-btn prev-btn">
-              <span class="pagination-sub">$\leftarrow$ Əvvəlki mövzu</span>
+              <span class="pagination-sub">← Əvvəlki mövzu</span>
               <span class="pagination-title">${prevTopic.title}</span>
             </a>
           ` : '<div class="pagination-placeholder"></div>'}
 
           ${nextTopic ? `
             <a href="#/topics/${nextTopic.slug}" class="pagination-btn next-btn">
-              <span class="pagination-sub">Növbəti mövzu $\rightarrow$</span>
+              <span class="pagination-sub">Növbəti mövzu →</span>
               <span class="pagination-title">${nextTopic.title}</span>
             </a>
           ` : '<div class="pagination-placeholder"></div>'}

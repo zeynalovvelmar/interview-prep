@@ -34,17 +34,17 @@ subtitle: "CV-də olmayan texnologiyalar üzrə dürüst, inamlı və strukturlu
 
 ---
 
-## 2. Boşluq 2: Real SQL Server $\rightarrow$ PostgreSQL Müəssisə Miqrasiyası
+## 2. Boşluq 2: Real SQL Server → PostgreSQL Müəssisə Miqrasiyası
 
 ### Vəziyyət
-* **Həqiqət:** Şirkət miqyasında 2 TB-lıq canlı bazanı təkbaşına köçürməmisən, amma data tiplərinin uyğunlaşdırılmasını, T-SQL $\rightarrow$ PL/pgSQL sintaksis fərqlərini, CDC və Cutover addımlarını bilirsən.
+* **Həqiqət:** Şirkət miqyasında 2 TB-lıq canlı bazanı təkbaşına köçürməmisən, amma data tiplərinin uyğunlaşdırılmasını, T-SQL → PL/pgSQL sintaksis fərqlərini, CDC və Cutover addımlarını bilirsən.
 
 ### İnamlı və Dürüst Cavab Skripti
 > "Mən böyük şirkətdə canlı sistemin təkbaşına miqrasiyasını aparmamışam. Lakin miqrasiya prosesinin bütün mərhələlərini və risklərini addım-addım təhlil etmişəm. 
 > 
 > Yanaşmam 4 fazadan ibarətdir: 
-> 1) **İnventar və Analiz:** data tiplərinin (DATETIME2 $\rightarrow$ TIMESTAMPTZ, BIT $\rightarrow$ BOOLEAN, IDENTITY $\rightarrow$ GENERATED AS IDENTITY) xəritələnməsi; 
-> 2) **Test mühitində DDL və Skriptlərin tətbiqi:** T-SQL xüsusiyyətlərinin (TOP $\rightarrow$ LIMIT, ISNULL $\rightarrow$ COALESCE, MERGE $\rightarrow$ ON CONFLICT) PL/pgSQL-ə çevrilməsi; 
+> 1) **İnventar və Analiz:** data tiplərinin (DATETIME2 → TIMESTAMPTZ, BIT → BOOLEAN, IDENTITY → GENERATED AS IDENTITY) xəritələnməsi; 
+> 2) **Test mühitində DDL və Skriptlərin tətbiqi:** T-SQL xüsusiyyətlərinin (TOP → LIMIT, ISNULL → COALESCE, MERGE → ON CONFLICT) PL/pgSQL-ə çevrilməsi; 
 > 3) **Məlumatın köçürülməsi və CDC:** böyük həcm üçün ilkin snapshot yükləmə və fasiləsiz CDC sinxronizasiyası; 
 > 4) **Validasiya:** sətir sayı, MD5/SHA256 heş və biznes yekunlarının tutuşdurulması. Hər bir addımda mütləq Rollback və Cutover planı hazırlayaram."
 
@@ -65,7 +65,7 @@ subtitle: "CV-də olmayan texnologiyalar üzrə dürüst, inamlı və strukturlu
 ### İnamlı və Dürüst Cavab Skripti
 > "Mənim birinci layihəmdə əsas fokusum Delta Lake üzərində olub və orada `_delta_log` vasitəsilə ACID tranzaksiyaların, Time Travel və Schema Evolution mexanizmlərinin necə işlədiyini praktiki görmüşəm. Apache Iceberg-i istehsalatda canlı tətbiq etməmişəm, lakin konseptual memarlığını araşdırmışam. 
 > 
-> Iceberg-in kataloq əsaslı (Catalog Pointer $\rightarrow$ metadata.json $\rightarrow$ Manifest List $\rightarrow$ Manifest Files $\rightarrow$ Parquet) arxitekturasını və Gizli Partisiyalanma (Hidden Partitioning) üstünlüyünü çox yaxşı başa düşürəm. Delta Lake-də öyrəndiyim cədvəl formatı prinsipləri 90% Iceberg-ə keçərlidir; iş mühitində Iceberg-ə adaptasiya olmağım cəmi bir neçə gün çəkər."
+> Iceberg-in kataloq əsaslı (Catalog Pointer → metadata.json → Manifest List → Manifest Files → Parquet) arxitekturasını və Gizli Partisiyalanma (Hidden Partitioning) üstünlüyünü çox yaxşı başa düşürəm. Delta Lake-də öyrəndiyim cədvəl formatı prinsipləri 90% Iceberg-ə keçərlidir; iş mühitində Iceberg-ə adaptasiya olmağım cəmi bir neçə gün çəkər."
 
 ### Layihələrdən Transfer Olunan Bacarıqlar
 * Delta Lake ACID, compaction (OPTIMIZE), snapshot izolyasiyası və Time Travel anlayışları birbaşa Iceberg-in analoji xüsusiyyətləri ilə eyni mühəndislik məqsədinə xidmət edir.

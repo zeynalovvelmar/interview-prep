@@ -60,7 +60,7 @@ Data mühəndisliyində istifadə olunan 3 əsas fakt cədvəli növü mövcuddu
 | :--- | :--- | :--- | :--- |
 | **Transactional Fact** | Hər bir fərdi əməliyyat anını qeyd edir. Ən xırda qranulyarlıq səviyyəsidir. | Hər bir sığorta polisin satışı və ya hər bir fərdi kompensasiya ödənişi. | Yalnız əlavə edilir (`INSERT-only`), heç vaxt dəyişdirilmir. |
 | **Periodic Snapshot Fact** | Müəyyən zaman fasiləsinin (gün, ay, rüb) sonuna olan ümumi vəziyyəti əks etdirir. | Hər ayın sonuna olan aktiv polislərin ümumi sayı və toplam yığılmış sığorta haqqı. | Dövri olaraq (məsələn, hər ayın 1-i) hesablanıb yazılır. |
-| **Accumulating Snapshot Fact** | Çoxmərhələli biznes prosesinin başlanğıcından yekununa qədərki bütün status və tarixlərini tək sətirdə izləyir. | Sığorta hadisəsinin gedişatı: Qəzanın baş verməsi $\rightarrow$ İddianın qeydiyyatı $\rightarrow$ Ekspertiza $\rightarrow$ Təsdiq $\rightarrow$ Ödəniş tarixi. | Prosesin hər addımında mövcud sətir `UPDATE` edilir. |
+| **Accumulating Snapshot Fact** | Çoxmərhələli biznes prosesinin başlanğıcından yekununa qədərki bütün status və tarixlərini tək sətirdə izləyir. | Sığorta hadisəsinin gedişatı: Qəzanın baş verməsi → İddianın qeydiyyatı → Ekspertiza → Təsdiq → Ödəniş tarixi. | Prosesin hər addımında mövcud sətir `UPDATE` edilir. |
 
 #### Ölçü Cədvəlləri (Dimension Tables)
 Ölçü cədvəlləri faktlara dolğun kontekst verir ("Kim? Harada? Nə vaxt? Hansı şərtlərlə?"). Bu cədvəllər mətn xarakterli və təsviri atributlardan ibarətdir: `customer_name`, `gender`, `car_model`, `branch_name`.
@@ -96,7 +96,7 @@ Müştərinin ünvanı, telefon nömrəsi və ya risk qrupu zamanla dəyişdikd�
 | Parametr | Ulduz Sxemi (Star Schema) | Qar Dənəciyi (Snowflake Schema) |
 | :--- | :--- | :--- |
 | **Quruluş** | Bütün ölçülər birbaşa mərkəzdəki fakt cədvəlinə bağlanır. | Ölçü cədvəllərinin özləri də daxildə normallaşdırılır (alt-cədvəllərə bölünür). |
-| **Normallaşdırma** | Tam denormallaşdırılıb (Şəhər, Rayon, Ölkə eyni cədvəldədir). | Qismən normallaşdırılıb (`City` $\rightarrow$ `Region` $\rightarrow$ `Country`). |
+| **Normallaşdırma** | Tam denormallaşdırılıb (Şəhər, Rayon, Ölkə eyni cədvəldədir). | Qismən normallaşdırılıb (`City` → `Region` → `Country`). |
 | **JOIN Əməliyyatları** | Çox sadə və az sayda `JOIN` (Maksimum sorğu sürəti). | Çoxlu pilləli `JOIN`-lər tələb edir və sorğunu ləngidir. |
 | **DWH Tövsiyəsi** | **Kimball standartı və ən yaxşı seçim.** | Müasir analitikada nadir hallarda istifadə olunur. |
 

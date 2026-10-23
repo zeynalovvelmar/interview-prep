@@ -57,7 +57,7 @@ Amazon S3 müasir Lakehouse arxitekturasının təməl fiziki saxlama qatıdır:
 | **S3 Standard** | Yüksək sürətli, tez-tez oxunan canlı analitik məlumatlar üçün. | Gold və Silver analitik qatları üçün istifadə olunur. |
 | **S3 Standard-IA** | Nadir oxunan (Infrequent Access), lakin dərhal əlçatan arxivlər. | Xam Bronze məlumatlarının saxlanması üçün xərci 40% azaldır. |
 | **S3 Glacier / Deep Archive** | Qanunvericilik tələbi ilə 5–10 il saxlanılan ən ucuz arxiv sinfi. | İllik audit və tarixi sığorta loqları üçün nəzərdə tutulur. |
-| **Lifecycle Policies** | Məlumatın yaşlandıqca avtomatik olaraq Standard $\rightarrow$ IA $\rightarrow$ Glacier keçidi. | Məlumatları 90 gündən sonra avtomatik IA sinfinə keçirir. |
+| **Lifecycle Policies** | Məlumatın yaşlandıqca avtomatik olaraq Standard → IA → Glacier keçidi. | Məlumatları 90 gündən sonra avtomatik IA sinfinə keçirir. |
 
 ---
 
@@ -162,7 +162,7 @@ Apache Iceberg heç bir qovluq və fayl adı strukturuna bağlı qalmadan cədv�
 | Xüsusiyyət | Delta Lake | Apache Iceberg | Apache Hudi |
 | :--- | :--- | :--- | :--- |
 | **Yaradan / Hamisi** | Databricks / Linux Foundation | Netflix, Apple / Apache Foundation | Uber / Apache Foundation |
-| **Metadata Mexanizmi** | `_delta_log/` (JSON + Checkpoint Parquet) | 3-qatlı iyerarxiya (Catalog $\rightarrow$ Metadata $\rightarrow$ Manifest) | Hər fayl daxilində və `.hoodie/` loqu |
+| **Metadata Mexanizmi** | `_delta_log/` (JSON + Checkpoint Parquet) | 3-qatlı iyerarxiya (Catalog → Metadata → Manifest) | Hər fayl daxilində və `.hoodie/` loqu |
 | **Kataloq Asılılığı** | Zəif (Fayl qovluğu özü cədvəldir) | Güclü (Mərkəzi Kataloq şərtdir: Glue, REST) | Orta |
 | **Partisiya Dəyişimi**| Cədvəl yenidən yazılmalıdır | **Partition Evolution (Yenidən yazılmır)** | Cədvəl yenidən yazılmalıdır |
 | **Mühərrik Dəstəyi** | Ən güclü: Spark; Trino/Presto yaxşı | Geniş və bərabər: Spark, Trino, Athena, Flink | Əsasən Spark və Flink |

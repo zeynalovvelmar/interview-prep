@@ -7,7 +7,7 @@ subtitle: "Atəşgah Sığorta və Data Mühəndisliyi müsahibələri üçün a
 # Real İstehsalat Ssenariləri (5 Əsas Ssenari)
 
 > [!NOTE]
-> Müsahibədə texniki suallarla yanaşı sənə real istehsalat situasiyaları veriləcək. Hər bir ssenariyə cavab verərkən **tələsmədən**, **məsələni dəqiqləşdirərək**, **mərhələli (diaqnostika $\rightarrow$ təcili müdaxilə $\rightarrow$ kök səbəbin aradan qaldırılması $\rightarrow$ monitorinq)** strukturla yanaşmaq lazımdır.
+> Müsahibədə texniki suallarla yanaşı sənə real istehsalat situasiyaları veriləcək. Hər bir ssenariyə cavab verərkən **tələsmədən**, **məsələni dəqiqləşdirərək**, **mərhələli (diaqnostika → təcili müdaxilə → kök səbəbin aradan qaldırılması → monitorinq)** strukturla yanaşmaq lazımdır.
 
 ---
 
@@ -115,8 +115,8 @@ Addım 1: Datanın həcmi kəskin artıbmı? (Row count check)
 
 2. **Wait Stats və Bloklamaların (Locks) Analizi:**
    ETL işləyərkən serverdə nəyi gözlədiyinə baxıram (`sys.dm_os_waiting_tasks` və ya Postgres `pg_stat_activity`):
-   * `PAGEIOLATCH_SH` $\rightarrow$ Diskdən oxuma çox ləngdir (İndeks çatışmazlığı və ya Table Scan).
-   * `LCK_M_...` $\rightarrow$ Eyni vaxtda işləyən başqa bir zərərlilik arxivi skripti cədvəli kilidləyib.
+   * `PAGEIOLATCH_SH` → Diskdən oxuma çox ləngdir (İndeks çatışmazlığı və ya Table Scan).
+   * `LCK_M_...` → Eyni vaxtda işləyən başqa bir zərərlilik arxivi skripti cədvəli kilidləyib.
 
 3. **İcra Planı və Statistika Köhnəlməsi (Parameter Sniffing):**
    Ən çox rast gəlinən səbəb: Verilənlər bazası statistikasının köhnəlməsi səbəbindən Optimizer-in Index Seek əvəzinə tam Clustered Index Scan seçməsidir.

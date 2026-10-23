@@ -49,7 +49,7 @@ export async function renderTopicsListPage(): Promise<HTMLElement> {
             ${t.tags?.map(tag => `<span class="topic-tag">${tag}</span>`).join('') || ''}
           </div>
           <a href="#/topics/${t.slug}" class="btn btn-sm btn-outline">
-            Oxu $\rightarrow$
+            Oxu →
           </a>
         </div>
       </div>

@@ -32,25 +32,29 @@ tags: ["PySpark", "MinIO (S3)", "Delta Lake", "PostgreSQL", "Docker", "Git"]
 Bu layihəni 4 əsas mərhələdə həyata keçirmişəm:
 
 ### Mərhələ 1: İnfrastruktur və Obyekt Anbarı (MinIO S3)
-* Bulud xərcləri yaratmamaq və lokal mühitdə rahat işləmək üçün **Docker Compose** üzərində S3-uyğun **MinIO** serveri qaldırdım.
-* `insurance-lakehouse` adlı bucket yaratdım və daxilində `bronze/`, `silver/`, `gold/` prefiksləri ilə qovluq strukturu formalaşdırdım.
-* PySpark-ın MinIO ilə əlaqəsi üçün `hadoop-aws` və `aws-java-sdk-bundle` kitabxanalarını konfiqurasiya etdim, `fs.s3a.endpoint`, `fs.s3a.path.style.access=true` və S3 credentials parametrlərini sazladım.
+
+- Bulud xərcləri yaratmamaq və lokal mühitdə rahat işləmək üçün **Docker Compose** üzərində S3-uyğun **MinIO** serveri qaldırdım.
+- `insurance-lakehouse` adlı bucket yaratdım və daxilində `bronze/`, `silver/`, `gold/` prefiksləri ilə qovluq strukturu formalaşdırdım.
+- PySpark-ın MinIO ilə əlaqəsi üçün `hadoop-aws` və `aws-java-sdk-bundle` kitabxanalarını konfiqurasiya etdim, `fs.s3a.endpoint`, `fs.s3a.path.style.access=true` və S3 credentials parametrlərini sazladım.
 
 ### Mərhələ 2: Xammal Qəbulu (Bronze Qatı)
-* Mənbədən gələn gündəlik tranzaksiya və müştəri qeydləri (JSON və CSV) heç bir filtrləmə və ya dəyişiklik edilmədən append-only rejimində `s3a://insurance-lakehouse/bronze/` ünvanına yazıldı.
-* Bu qatın əsas məqsədi "Single Source of Truth" (vahid həqiqət mənbəyi) rolunu oynamaq və gələcəkdə hər hansı hesablama məntiqi dəyişərsə, məlumatları ilkin vəziyyətdən təkrar emal etməyə (reprocessing) imkan yaratmaq idi.
+
+- Mənbədən gələn gündəlik tranzaksiya və müştəri qeydləri (JSON və CSV) heç bir filtrləmə və ya dəyişiklik edilmədən append-only rejimində `s3a://insurance-lakehouse/bronze/` ünvanına yazıldı.
+- Bu qatın əsas məqsədi "Single Source of Truth" (vahid həqiqət mənbəyi) rolunu oynamaq və gələcəkdə hər hansı hesablama məntiqi dəyişərsə, məlumatları ilkin vəziyyətdən təkrar emal etməyə (reprocessing) imkan yaratmaq idi.
 
 ### Mərhələ 3: Təmizləmə və Zənginləşdirmə (Silver Qatı)
-* PySpark ilə Bronze qatından oxunan məlumatlar üzərində təmizləmə əməliyyatları apardım:
-  * Null və boş açarlar (`policy_id IS NOT NULL`) filtrləndi.
-  * Təkrarlanan sətirlər `dropDuplicates(['policy_id', 'transaction_date'])` ilə təmizləndi.
-  * Mətn formatındakı tarixlər `to_timestamp()` ilə, məbləğlər isə `DecimalType(12, 2)` ilə dəqiq tiplərə çevrildi.
-* Nəticə **Delta Lake** formatında `s3a://insurance-lakehouse/silver/` qovluğuna yazıldı. Delta Lake-in tranzaksiya loqu (`_delta_log`) sayəsində yazma zamanı nasazlıq olarsa yarımçıq faylların qalmasının qarşısı alındı.
+
+- PySpark ilə Bronze qatından oxunan məlumatlar üzərində təmizləmə əməliyyatları apardım:
+  - Null və boş açarlar (`policy_id IS NOT NULL`) filtrləndi.
+  - Təkrarlanan sətirlər `dropDuplicates(['policy_id', 'transaction_date'])` ilə təmizləndi.
+  - Mətn formatındakı tarixlər `to_timestamp()` ilə, məbləğlər isə `DecimalType(12, 2)` ilə dəqiq tiplərə çevrildi.
+- Nəticə **Delta Lake** formatında `s3a://insurance-lakehouse/silver/` qovluğuna yazıldı. Delta Lake-in tranzaksiya loqu (`_delta_log`) sayəsində yazma zamanı nasazlıq olarsa yarımçıq faylların qalmasının qarşısı alındı.
 
 ### Mərhələ 4: Aqreqasiya və Relyasion Çıxarış (Gold Qatı & PostgreSQL)
-* Silver qatındakı təmiz cədvəllər əsasında filiallar və məhsul növləri üzrə gündəlik KPI göstəriciləri (ümumi mükafat məbləği, polislərin sayı) hesablandı.
-* Gold cədvəli Delta Lake-də partisiya üzrə saxlanıldı (`partitionBy('year', 'month')`).
-* BI analitiklərinin və rəhbərliyin SQL ilə asan oxuması üçün PySpark-ın `write.format('jdbc')` imkanından istifadə edərək son datamart PostgreSQL relyasion bazasında yaradılmış `mart_policy_kpi` cədvəlinə yazıldı.
+
+- Silver qatındakı təmiz cədvəllər əsasında filiallar və məhsul növləri üzrə gündəlik KPI göstəriciləri (ümumi mükafat məbləği, polislərin sayı) hesablandı.
+- Gold cədvəli Delta Lake-də partisiya üzrə saxlanıldı (`partitionBy('year', 'month')`).
+- BI analitiklərinin və rəhbərliyin SQL ilə asan oxuması üçün PySpark-ın `write.format('jdbc')` imkanından istifadə edərək son datamart PostgreSQL relyasion bazasında yaradılmış `mart_policy_kpi` cədvəlinə yazıldı.
 
 ---
 

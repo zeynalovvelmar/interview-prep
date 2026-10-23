@@ -60,6 +60,6 @@ Layihə tamamilə statikdir (heç bir server və ya DB tələb olunmur):
 Bu tətbiq **Progressive Web App (PWA)** standartını dəstəkləyir və oflayn işləyir:
 
 1. Saytı telefonunuzda (Chrome və ya Safari) açın.
-2. Safari-də: **Paylaş (Share)** $\rightarrow$ **Ana ekrana əlavə et (Add to Home Screen)** seçin.
-3. Chrome-da: **Üç nöqtə (Menyu)** $\rightarrow$ **Tətbiqi quraşdır (Install App)** seçin.
+2. Safari-də: **Paylaş (Share)** → **Ana ekrana əlavə et (Add to Home Screen)** seçin.
+3. Chrome-da: **Üç nöqtə (Menyu)** → **Tətbiqi quraşdır (Install App)** seçin.
 4. Tətbiq ayrıca tətbiq kimi açılacaq və metroda/avtobusda internet olmadan da bütün mövzuları oxumağa imkan verəcək.

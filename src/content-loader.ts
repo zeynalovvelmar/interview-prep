@@ -105,6 +105,22 @@ export function slugify(text: string): string {
     .replace(/\s+/g, '-');
 }
 
+// Clean LaTeX arrows and math expressions to clean Unicode and readable text
+function cleanMarkdownText(markdown: string): string {
+  return markdown
+    .replace(/\$\s*\\rightarrow\s*\$/g, '→')
+    .replace(/\$\s*\\leftarrow\s*\$/g, '←')
+    .replace(/\$\s*\\leftrightarrow\s*\$/g, '↔')
+    .replace(/\\rightarrow/g, '→')
+    .replace(/\\leftarrow/g, '←')
+    .replace(/\\leftrightarrow/g, '↔')
+    .replace(/\$\s*\\?ightarrow\s*\$/g, '→')
+    .replace(/\$\s*\\?eftarrow\s*\$/g, '←')
+    .replace(/\$\$\\text\{([^}]+)\}\s*=\s*\\frac\{\\text\{([^}]+)\}\}\{\\text\{([^}]+)\}\}\s*\\times\s*100\\%\$\$/g, '$1 = ($2 / $3) × 100%')
+    .replace(/\$\$([\s\S]*?)\$\$/g, (_match, math) => math.replace(/\\text\{([^}]+)\}/g, '$1').replace(/\\times/g, '×').replace(/\\_/g, '_').trim())
+    .replace(/\$([^\n$]+)\$/g, (_match, math) => math.replace(/\\text\{([^}]+)\}/g, '$1').replace(/\\times/g, '×').replace(/\\_/g, '_').trim());
+}
+
 // Extract headings for Table of Contents
 function extractHeadings(markdown: string): { headings: HeadingItem[]; modifiedMarkdown: string } {
   const headings: HeadingItem[] = [];
@@ -113,7 +129,7 @@ function extractHeadings(markdown: string): { headings: HeadingItem[]; modifiedM
     const cleanTitle = title.replace(/\*\*/g, '').trim();
     const id = slugify(cleanTitle);
     headings.push({ id, text: cleanTitle, level });
-    return `<h${level} id="${id}">${cleanTitle}</h${level}>`;
+    return `\n\n<h${level} id="${id}">${cleanTitle}</h${level}>\n\n`;
   });
 
   return { headings, modifiedMarkdown };
@@ -141,7 +157,8 @@ export class ContentLoader {
       const filename = path.split('/').pop()?.replace('.md', '') || 'topic';
 
       // Markdown transformations
-      let processed = transformCallouts(content);
+      let processed = cleanMarkdownText(content);
+      processed = transformCallouts(processed);
       processed = transformMiniQuizzes(processed);
       processed = transformDialectTabs(processed);
       const { headings, modifiedMarkdown } = extractHeadings(processed);
@@ -153,13 +170,13 @@ export class ContentLoader {
         id: data.id || filename,
         slug: data.slug || filename,
         order: Number(data.order) || 99,
-        title: data.title || filename,
+        title: cleanMarkdownText(data.title || filename),
         category: data.category || 'Ümumi',
         priority: data.priority || 'medium',
         readiness: data.readiness || 'oyrenmeliyem',
-        vacancyLink: data.vacancyLink || '',
+        vacancyLink: cleanMarkdownText(data.vacancyLink || ''),
         tags: Array.isArray(data.tags) ? data.tags : [],
-        summary: data.summary || '',
+        summary: cleanMarkdownText(data.summary || ''),
         rawMarkdown: content,
         html,
         headings
@@ -231,7 +248,8 @@ export class ContentLoader {
       const { data, content } = parseFrontmatter(rawContent);
       const filename = path.split('/').pop()?.replace('.md', '') || 'project';
 
-      let processed = transformCallouts(content);
+      let processed = cleanMarkdownText(content);
+      processed = transformCallouts(processed);
       processed = transformMiniQuizzes(processed);
       processed = transformDialectTabs(processed);
       const { headings, modifiedMarkdown } = extractHeadings(processed);
@@ -241,8 +259,8 @@ export class ContentLoader {
       projects.push({
         id: data.id || filename,
         slug: data.slug || filename,
-        title: data.title || filename,
-        subtitle: data.subtitle || '',
+        title: cleanMarkdownText(data.title || filename),
+        subtitle: cleanMarkdownText(data.subtitle || ''),
         date: data.date || '',
         role: data.role || 'Data Mühəndisi',
         tags: Array.isArray(data.tags) ? data.tags : [],
@@ -263,7 +281,8 @@ export class ContentLoader {
 
   public static async parseMarkdownDocument(raw: string): Promise<{ data: Record<string, any>; html: string; headings: HeadingItem[] }> {
     const { data, content } = parseFrontmatter(raw);
-    let processed = transformCallouts(content);
+    let processed = cleanMarkdownText(content);
+    processed = transformCallouts(processed);
     processed = transformMiniQuizzes(processed);
     processed = transformDialectTabs(processed);
     const { headings, modifiedMarkdown } = extractHeadings(processed);
